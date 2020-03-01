@@ -1,4 +1,4 @@
 pub mod token;
 pub mod state;
-pub mod lexer;
+pub mod lex;
 mod util;

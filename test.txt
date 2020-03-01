@@ -1,0 +1,9 @@
+123421 what /* 
+fuck 
+*/ 
+shit
+shit
+void if 11222
+while
+a * 3
+int a = 3;

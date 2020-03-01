@@ -1,13 +1,17 @@
 mod lexer;
-use lexer::lexer::Lexer;
+use lexer::lex::Lexer;
+use lexer::state::State;
 use lexer::token::{Token, TokenType};
-fn main() {
-    let a = "a\nfuck".to_string();
-    a.chars().for_each(|ch| {
-        if ch == '\n' {
-            println!("fuck",);
-        } else {
-            println!("{}", ch);
-        }
-    });
+
+use std::fs::{read_to_string, File};
+use std::io::Error;
+use std::path;
+fn main() -> Result<(), Error> {
+    let path = path::Path::new("test.txt");
+    let a = read_to_string(path)?;
+    let mut lex = Lexer::new(&a);
+    while let Some(token) = lex.get_token() {
+        println!("{:?}", token);
+    }
+    Ok(())
 }

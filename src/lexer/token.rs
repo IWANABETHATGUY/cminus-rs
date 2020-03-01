@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenType {
     ENDFILE,
     ERROR,
@@ -36,18 +36,18 @@ pub enum TokenType {
     ASSIGN,
 }
 
+#[derive(Debug)]
 pub struct Token {
     ttype: TokenType,
     content: String,
-    pos: usize,
+    // pos: usize,
 }
 
 impl Token {
-    pub fn new(ttype: TokenType, content: String, pos: usize) -> Self {
+    pub fn new(ttype: TokenType, content: String) -> Self {
         Self {
             ttype,
             content,
-            pos,
         }
     }
 }

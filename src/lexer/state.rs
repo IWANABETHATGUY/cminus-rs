@@ -1,3 +1,4 @@
+#[derive(PartialEq)]
 pub enum State {
     START,
     INDIVIDE,
@@ -11,5 +12,4 @@ pub enum State {
     INNOTEQUAL,
     INCOMMENT,
     INECOMMENT,
-    INNE,
 }
