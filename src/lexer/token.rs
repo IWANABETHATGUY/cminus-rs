@@ -1,4 +1,5 @@
-pub enum Token {
+#[derive(Debug)]
+pub enum TokenType {
     ENDFILE,
     ERROR,
     /* reserved words */
@@ -7,7 +8,7 @@ pub enum Token {
     INT,
     RETURN,
     VOID,
-    WRITE,
+    WHILE,
     /* multicharacter tokens */
     ID,
     NUM,
@@ -33,4 +34,20 @@ pub enum Token {
     RBRACE,
     COMMENT,
     ASSIGN,
+}
+
+pub struct Token {
+    ttype: TokenType,
+    content: String,
+    pos: usize,
+}
+
+impl Token {
+    pub fn new(ttype: TokenType, content: String, pos: usize) -> Self {
+        Self {
+            ttype,
+            content,
+            pos,
+        }
+    }
 }
