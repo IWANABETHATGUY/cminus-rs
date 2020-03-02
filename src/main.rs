@@ -13,5 +13,7 @@ fn main() -> Result<(), Error> {
     while let Some(token) = lex.get_token() {
         println!("{:?}", token);
     }
+    let a_test = 3;
+    println!("{}", a_test);
     Ok(())
 }
