@@ -1,6 +1,5 @@
 mod lexer;
 use lexer::lex::Lexer;
-use lexer::state::State;
 use lexer::token::{Token, TokenType};
 
 use std::fs::{read_to_string, File};

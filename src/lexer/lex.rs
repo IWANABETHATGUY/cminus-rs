@@ -257,14 +257,14 @@ impl Lexer {
     }
 }
 
-fn confirm_state_and_token(
-    is_none: bool,
-    state: &mut State,
-    cur_token: &mut TokenType,
-    final_token_type: TokenType,
-) {
-    if is_none {
-        *state = State::DONE;
-        *cur_token = final_token_type;
-    }
-}
+// fn confirm_state_and_token(
+//     is_none: bool,
+//     state: &mut State,
+//     cur_token: &mut TokenType,
+//     final_token_type: TokenType,
+// ) {
+//     if is_none {
+//         *state = State::DONE;
+//         *cur_token = final_token_type;
+//     }
+// }
