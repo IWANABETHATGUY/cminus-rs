@@ -15,7 +15,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(file: & str) -> Self {
+    pub fn new(file: &str) -> Self {
         let file_vec = file.chars().collect();
         Lexer {
             cursor: 0,
@@ -24,6 +24,13 @@ impl Lexer {
             length: file.len(),
             file_vec,
         }
+    }
+    pub fn lex(&mut self) -> Vec<Token> {
+        let mut token_list = vec![];
+        while let Some(token) = self.get_token() {
+            token_list.push(token);
+        }
+        token_list
     }
     fn keyword_or_id_token(s: &String) -> TokenType {
         match util::is_keyword(s) {
@@ -40,13 +47,13 @@ impl Lexer {
         self.cursor += 1;
     }
 
-    pub fn get_token(&mut self) -> Option<Token> {
+    fn get_token(&mut self) -> Option<Token> {
         if self.cursor == self.length {
             return None;
         }
         let mut result = "".to_string();
         let mut save = false;
-        let mut start_index = 0;
+        // let mut start_index = 0;
         // let mut token =
         let mut token: Option<Token> = None;
         let mut state = State::START;
@@ -95,7 +102,7 @@ impl Lexer {
                     }
                     _ if util::is_digit(cur_char) => {
                         state = State::INNUM;
-                        if self.cursor ==  self.length {
+                        if self.cursor == self.length {
                             state = State::DONE;
                             cur_token = TokenType::NUM;
                         }

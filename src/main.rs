@@ -10,10 +10,9 @@ fn main() -> Result<(), Error> {
     let path = path::Path::new("test.txt");
     let a = read_to_string(path)?;
     let mut lex = Lexer::new(&a);
-    while let Some(token) = lex.get_token() {
+    let list = lex.lex();
+    for token in list {
         println!("{:?}", token);
     }
-    let a_test = 3;
-    println!("{}", a_test);
     Ok(())
 }
