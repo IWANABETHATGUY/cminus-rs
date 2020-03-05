@@ -12,6 +12,8 @@ pub struct Lexer {
     // total_len: usize,
     display_comment: bool,
     file_vec: Vec<char>,
+    line: u32,
+    column: u32,
 }
 
 impl Lexer {
@@ -23,6 +25,8 @@ impl Lexer {
             display_comment: true,
             length: file.len(),
             file_vec,
+            line: 0,
+            column: 0,
         }
     }
     pub fn lex(&mut self) -> Vec<Token> {
@@ -33,10 +37,7 @@ impl Lexer {
         token_list
     }
     fn keyword_or_id_token(s: &String) -> TokenType {
-        match util::is_keyword(s) {
-            true => TokenType::KEYWORD,
-            false => TokenType::ID,
-        }
+        util::keyword_or_id(s)
     }
 
     fn unget_next_char(&mut self) {
@@ -58,7 +59,8 @@ impl Lexer {
         let mut token: Option<Token> = None;
         let mut state = State::START;
         let mut cur_token = TokenType::ERROR;
-
+        let cur_line = self.line;
+        let cur_column = self.column;
         while state != State::DONE && self.cursor < self.length {
             let cur_char = self.file_vec[self.cursor];
             self.next_char();
@@ -250,7 +252,8 @@ impl Lexer {
                 if cur_token == TokenType::ID {
                     cur_token = Self::keyword_or_id_token(&result);
                 }
-                token = Some(Token::new(cur_token, result.clone()));
+                token = Some(Token::new(cur_token, result, cur_line, cur_column));
+                break;
             }
         }
         token

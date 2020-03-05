@@ -41,11 +41,18 @@ pub struct Token {
     ttype: TokenType,
     content: String,
     // pos: usize,
+    line: u32,
+    column: u32,
 }
 
 impl Token {
-    pub fn new(ttype: TokenType, content: String) -> Self {
-        Self { ttype, content }
+    pub fn new(ttype: TokenType, content: String, line: u32, column: u32) -> Self {
+        Self {
+            ttype,
+            content,
+            line,
+            column,
+        }
     }
 
     pub fn get_token_type(&self) -> TokenType {
@@ -54,5 +61,9 @@ impl Token {
 
     pub fn get_token_string(&self) -> String {
         self.content.clone()
+    }
+
+    pub fn get_token_position(&self) -> (u32, u32) {
+        (self.line, self.column)
     }
 }
