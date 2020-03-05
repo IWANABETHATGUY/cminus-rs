@@ -1,6 +1,6 @@
-use lexer::lex::Lexer;
+use crate::lexer::lex;
 
-struct Parser {
+pub struct Parser {
     
 }
 
