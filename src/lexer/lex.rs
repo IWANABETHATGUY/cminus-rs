@@ -12,8 +12,10 @@ pub struct Lexer {
     // total_len: usize,
     display_comment: bool,
     file_vec: Vec<char>,
-    line: u32,
-    column: u32,
+    line: i32,
+    column: i32,
+    last_line: i32,
+    last_column: i32,
 }
 
 impl Lexer {
@@ -27,6 +29,8 @@ impl Lexer {
             file_vec,
             line: 0,
             column: 0,
+            last_line: -1,
+            last_column: -1,
         }
     }
     pub fn lex(&mut self) -> Vec<Token> {
@@ -42,10 +46,15 @@ impl Lexer {
 
     fn unget_next_char(&mut self) {
         self.cursor -= 1;
+        self.column = self.last_column;
+        self.line = self.last_line;
     }
 
     fn next_char(&mut self) {
         self.cursor += 1;
+        self.last_line = self.line;
+        self.last_column = self.column;
+        self.column += 1;
     }
 
     fn get_token(&mut self) -> Option<Token> {
@@ -59,12 +68,15 @@ impl Lexer {
         let mut token: Option<Token> = None;
         let mut state = State::START;
         let mut cur_token = TokenType::ERROR;
-        let cur_line = self.line;
-        let cur_column = self.column;
+        let mut cur_line = 0;
+        let mut cur_column = 0;
+        let mut flag = false;
         while state != State::DONE && self.cursor < self.length {
+            
             let cur_char = self.file_vec[self.cursor];
             self.next_char();
             save = true;
+
             match state {
                 State::START => match cur_char {
                     '<' => {
@@ -114,6 +126,15 @@ impl Lexer {
                         if self.cursor == self.length {
                             state = State::DONE;
                             cur_token = TokenType::ID;
+                        }
+                    }
+                    _ if cur_char == '\n' => {
+                        self.last_line = self.line;
+                        self.line += 1;
+                        self.column = 0;
+                        save = false;
+                        if self.cursor == self.length {
+                            state = State::DONE;
                         }
                     }
                     _ if cur_char.is_whitespace() => {
@@ -220,6 +241,15 @@ impl Lexer {
                     }
                 }
                 State::INCOMMENT => {
+                    if cur_char == '\n' {
+                        self.last_line = self.line;
+                        self.line += 1;
+                        self.column = 0;
+                        save = false;
+                        if self.cursor == self.length {
+                            state = State::DONE;
+                        }
+                    }
                     if cur_char == '*' {
                         state = State::INECOMMENT;
                     }
@@ -247,6 +277,11 @@ impl Lexer {
             }
             if save {
                 result += &cur_char.to_string();
+            }
+            if state != State::START && !flag {
+                cur_line = self.last_line;
+                cur_column = self.last_column;
+                flag = true;
             }
             if state == State::DONE {
                 if cur_token == TokenType::ID {
