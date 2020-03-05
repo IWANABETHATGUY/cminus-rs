@@ -45,9 +45,14 @@ pub struct Token {
 
 impl Token {
     pub fn new(ttype: TokenType, content: String) -> Self {
-        Self {
-            ttype,
-            content,
-        }
+        Self { ttype, content }
+    }
+
+    pub fn get_token_type(&self) -> TokenType {
+        self.ttype
+    }
+
+    pub fn get_token_string(&self) -> String {
+        self.content.clone()
     }
 }
