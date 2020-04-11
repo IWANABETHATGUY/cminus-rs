@@ -1,8 +1,8 @@
 123421 what /* 
-fuck 
+is 
 */ 
-shit
-shit
+test
+test
 void if 11222
 while
 a * 3

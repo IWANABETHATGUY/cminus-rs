@@ -1,7 +1,9 @@
 mod lexer;
+mod parser;
+
 use lexer::lex::Lexer;
 use lexer::token::{Token, TokenType};
-
+use parser::parse::Parser;
 use std::fs::{read_to_string, File};
 use std::io::Error;
 use std::path;

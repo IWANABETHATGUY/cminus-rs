@@ -36,18 +36,34 @@ pub enum TokenType {
     ASSIGN,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     ttype: TokenType,
     content: String,
     // pos: usize,
+    line: i32,
+    column: i32,
 }
 
 impl Token {
-    pub fn new(ttype: TokenType, content: String) -> Self {
+    pub fn new(ttype: TokenType, content: String, line: i32, column: i32) -> Self {
         Self {
             ttype,
             content,
+            line,
+            column,
         }
+    }
+
+    pub fn get_token_type(&self) -> TokenType {
+        self.ttype
+    }
+
+    pub fn get_token_string(&self) -> String {
+        self.content.clone()
+    }
+
+    pub fn get_token_position(&self) -> (i32, i32) {
+        (self.line, self.column)
     }
 }
