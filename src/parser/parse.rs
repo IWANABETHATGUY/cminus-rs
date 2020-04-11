@@ -1,14 +1,5 @@
 use crate::lexer::lex;
 
-pub struct Parser {
-    
-}
+pub struct Parser {}
 
-impl Parser {
-    pub fn new() {
-        
-    }
-    fn testTest() {
-        
-    }
-}
+impl Parser {}

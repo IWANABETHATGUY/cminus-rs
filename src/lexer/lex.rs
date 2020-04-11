@@ -40,7 +40,7 @@ impl Lexer {
         }
         token_list
     }
-    fn keyword_or_id_token(s: &String) -> TokenType {
+    fn keyword_or_id_token(s: &str) -> TokenType {
         util::keyword_or_id(s)
     }
 
@@ -72,7 +72,6 @@ impl Lexer {
         let mut cur_column = 0;
         let mut flag = false;
         while state != State::DONE && self.cursor < self.length {
-            
             let cur_char = self.file_vec[self.cursor];
             self.next_char();
             save = true;
@@ -245,7 +244,6 @@ impl Lexer {
                         self.last_line = self.line;
                         self.line += 1;
                         self.column = 0;
-                        save = false;
                         if self.cursor == self.length {
                             state = State::DONE;
                         }
@@ -287,7 +285,7 @@ impl Lexer {
                 if cur_token == TokenType::ID {
                     cur_token = Self::keyword_or_id_token(&result);
                 }
-                token = Some(Token::new(cur_token, result, cur_line, cur_column));
+                token = Some(Token::new(cur_token, result, cur_line + 1, cur_column + 1));
                 break;
             }
         }
