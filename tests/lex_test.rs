@@ -97,7 +97,7 @@ mod test_lex {
         let mut lexer = Lexer::new(&file);
 
         let list = lexer.lex();
-        assert_eq!(list.len(), 72);
+        assert_eq!(list.len(), 73);
 
         let mut iter = list.into_iter();
         assert_eq!(
@@ -249,8 +249,7 @@ mod test_lex {
             iter.next(),
             Some(Token::new(
                 TokenType::COMMENT,
-                "/* u-u/v*v == u mod v\n      that\n      something\n    */"
-                .to_string(),
+                "/* u-u/v*v == u mod v/*\n      that\n      something\n    */".to_string(),
                 6,
                 5
             ))
@@ -398,6 +397,10 @@ mod test_lex {
         assert_eq!(
             iter.next(),
             Some(Token::new(TokenType::RBRACE, "}".to_string(), 18, 1))
+        );
+        assert_eq!(
+            iter.next(),
+            Some(Token::new(TokenType::ERROR, "/* u-u/v*v == u mod v/*".to_string(), 19, 1))
         );
         Ok(())
     }

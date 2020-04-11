@@ -267,9 +267,14 @@ impl Lexer {
                             result = "".to_string();
                         }
                     } else if cur_char == '*' {
-                        state = State::INECOMMENT;
                     } else {
                         state = State::INCOMMENT;
+                        if cur_char == '\n' {
+                            self.last_line = self.line;
+                            self.line += 1;
+                            self.column = 0;
+                        }
+                        // self.unget_next_char();
                     }
                 }
             }
