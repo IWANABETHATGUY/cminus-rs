@@ -281,7 +281,7 @@ impl Lexer {
                 cur_column = self.last_column;
                 flag = true;
             }
-            if state == State::DONE {
+            if state == State::DONE && !result.is_empty() {
                 if cur_token == TokenType::ID {
                     cur_token = Self::keyword_or_id_token(&result);
                 }
