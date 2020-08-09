@@ -38,7 +38,7 @@ pub enum TokenType {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    ttype: TokenType,
+    token_type: TokenType,
     content: String,
     // pos: usize,
     line: i32,
@@ -48,7 +48,7 @@ pub struct Token {
 impl Token {
     pub fn new(ttype: TokenType, content: String, line: i32, column: i32) -> Self {
         Self {
-            ttype,
+            token_type: ttype,
             content,
             line,
             column,
@@ -56,7 +56,7 @@ impl Token {
     }
 
     pub fn get_token_type(&self) -> TokenType {
-        self.ttype
+        self.token_type
     }
 
     pub fn get_token_string(&self) -> String {

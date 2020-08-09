@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod test_lex {
     use std::fs::read_to_string;
-    use std::io::Error;
     use std::{fs, path};
     use tinylang_rs::lexer::lex::Lexer;
     use tinylang_rs::lexer::token::{Token, TokenType};
     #[test]
-    fn test_lex() -> Result<(), Error> {
+    fn test_lex() -> Result<(), std::io::Error> {
         let path = path::Path::new("test.txt");
         let file = read_to_string(path)?;
         let mut lexer = Lexer::new(&file);
@@ -23,7 +22,6 @@ mod test_lex {
             iter.next(),
             Some(Token::new(TokenType::ID, "what".to_string(), 1, 8))
         );
-        // TODO: ERROR here
         assert_eq!(
             iter.next(),
             Some(Token::new(
