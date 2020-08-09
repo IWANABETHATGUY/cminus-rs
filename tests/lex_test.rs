@@ -28,7 +28,7 @@ mod test_lex {
             iter.next(),
             Some(Token::new(
                 TokenType::COMMENT,
-                "/* \nis \n*/"
+                "/* \r\nis \r\n*/"
                 .to_string(),
                 1,
                 13
