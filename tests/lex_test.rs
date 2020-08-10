@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod test_lex {
     use std::fs::read_to_string;
-    use std::io::Error;
     use std::{fs, path};
     use tinylang_rs::lexer::lex::Lexer;
     use tinylang_rs::lexer::token::{Token, TokenType};
     #[test]
-    fn test_lex_meaningless() -> Result<(), Error> {
+    fn test_lex_meaningless() -> Result<(), std::io::Error> {
         let path = path::Path::new("tests/fixtures/lexer.test.txt");
         let file = read_to_string(path)?;
         let mut lexer = Lexer::new(&file);
@@ -27,7 +26,8 @@ mod test_lex {
             iter.next(),
             Some(Token::new(
                 TokenType::COMMENT,
-                "/* \nis \n*/".to_string(),
+                "/* \r\nis \r\n*/"
+                .to_string(),
                 1,
                 13
             ))
@@ -91,7 +91,7 @@ mod test_lex {
         Ok(())
     }
     #[test]
-    fn test_lex_gcd() -> Result<(), Error> {
+    fn test_lex_gcd() -> Result<(), std::io::Error> {
         let path = path::Path::new("tests/fixtures/lexer2.test.txt");
         let file = read_to_string(path)?;
         let mut lexer = Lexer::new(&file);
@@ -249,7 +249,7 @@ mod test_lex {
             iter.next(),
             Some(Token::new(
                 TokenType::COMMENT,
-                "/* u-u/v*v == u mod v/*\n      that\n      something\n    */".to_string(),
+                "/* u-u/v*v == u mod v/*\r\n      that\r\n      something\r\n    */".to_string(),
                 6,
                 5
             ))
