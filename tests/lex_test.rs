@@ -30,7 +30,7 @@ mod test_lex {
         let mut lexer = Lexer::new(&file);
 
         let list = lexer.lex();
-        assert_eq!(list.len(), 20);
+        assert_eq!(list.len(), 26);
 
         let mut iter = list.into_iter();
         lex_test_helper(
@@ -90,7 +90,7 @@ mod test_lex {
             Position::new(5, 8),
             Position::new(5, 13),
         );
-        
+
         lex_test_helper(
             &file,
             iter.next(),
@@ -162,7 +162,6 @@ mod test_lex {
             Position::new(9, 0),
             Position::new(9, 1),
         );
-        
         lex_test_helper(
             &file,
             iter.next(),
@@ -176,6 +175,48 @@ mod test_lex {
             TokenType::NUM,
             Position::new(9, 5),
             Position::new(9, 6),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::LPAREN,
+            Position::new(10, 0),
+            Position::new(10, 1),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::RPAREN,
+            Position::new(10, 1),
+            Position::new(10, 2),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::LBRACK,
+            Position::new(10, 2),
+            Position::new(10, 3),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::RBRACK,
+            Position::new(10, 3),
+            Position::new(10, 4),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::LBRACE,
+            Position::new(10, 4),
+            Position::new(10, 5),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::RBRACE,
+            Position::new(10, 5),
+            Position::new(10, 6),
         );
         Ok(())
     }

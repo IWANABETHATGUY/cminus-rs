@@ -47,10 +47,10 @@ impl Position {
         Self { line, column }
     }
 }
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Token {
     pub token_type: TokenType,
-     pub content: String,
+    pub content: String,
     // pos: usize,
     pub start_position: Position,
     pub end_position: Position,
