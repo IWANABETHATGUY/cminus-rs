@@ -26,12 +26,12 @@ pub enum TokenType {
     NE,
     SEMI,
     COMMA,
-    LPAREN,
-    RPAREN,
-    LBRACK,
-    RBRACK,
-    LBRACE,
-    RBRACE,
+    LPAREN, // (
+    RPAREN, // )
+    LBRACK, // [
+    RBRACK, // ]
+    LBRACE, // {
+    RBRACE, // }
     COMMENT,
     ASSIGN,
 }

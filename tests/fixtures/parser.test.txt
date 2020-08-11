@@ -1,3 +1,10 @@
 int a;
 void b;
-int kkkkkk;
+
+int kkkkkk[10];
+
+int test(int a[], int c, void d[]) {
+   int d; 
+   int q;
+   int v[10];
+}
