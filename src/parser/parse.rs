@@ -6,7 +6,9 @@ use std::{
     fmt::{Debug, Display},
     ops::Index,
 };
-
+pub trait Walk {
+     fn walk(&self, level: usize);
+}
 pub struct ParseError {
     error: String,
 }
@@ -20,7 +22,7 @@ impl Debug for ParseError {
         write!(f, "{}", self.error)
     }
 }
-impl From<std::io::Error>  for ParseError {
+impl From<std::io::Error> for ParseError {
     fn from(error: std::io::Error) -> Self {
         ParseError {
             error: error.to_string(),
@@ -139,13 +141,13 @@ impl Parser {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Int,
-                    })
+                    });
                 }
                 TokenType::VOID => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Void,
-                    })
+                    });
                 }
                 _ => return Err(ParseError::from("expected `int` or `void`")),
             }
@@ -158,7 +160,14 @@ impl Parser {
 pub struct Program {
     declarations: Vec<Declaration>,
 }
-
+impl Walk for Program {
+    fn walk(&self, level: usize) {
+        println!("{}Program", " ".repeat(2 * level));
+        for decl in self.declarations.iter() {
+            decl.walk(level + 1);
+        }
+    }
+}
 // impl Debug for Program {
 //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
@@ -175,17 +184,52 @@ pub enum Declaration {
         num: Option<NumberLiteral>,
     },
 }
+impl Walk for Declaration {
+    fn walk(&self, level: usize) {
+        match &self {
+            Declaration::FunctionDeclaration {} => {}
+            Declaration::VarDeclaration {
+                type_specifier,
+                id,
+                num,
+            } => {
+                println!("{}VarDeclaration", " ".repeat(2 * level));
+                id.walk(level + 1);
+                type_specifier.walk(level + 1);
+                if let Some(num) = num {
+                    num.walk(level + 1);
+                }
+            }
+        }
+    }
+}
 #[derive(Debug)]
 pub struct Identifier {
     value: String,
+}
+impl Walk for Identifier {
+    fn walk(&self, level: usize) {
+        println!("{}Identifier({})", " ".repeat(2 * level), self.value);
+    }
 }
 #[derive(Debug)]
 pub struct NumberLiteral {
     value: i32,
 }
+impl Walk for NumberLiteral {
+    fn walk(&self, level: usize) {
+        println!("{}NumberLiteral({})", " ".repeat(2 * level), self.value);
+    }
+}
 #[derive(Debug)]
 pub struct TypeSpecifier {
     kind: TypeSpecifierKind,
+}
+
+impl Walk for TypeSpecifier {
+    fn walk(&self, level: usize) {
+        println!("{}TypeSpecifier({:?})", " ".repeat(2 * level), self.kind);
+    }
 }
 #[derive(Debug)]
 enum TypeSpecifierKind {

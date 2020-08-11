@@ -3,7 +3,7 @@ mod parser;
 
 use lexer::lex::Lexer;
 use lexer::token::{Token, TokenType};
-use parser::parse::{ParseError, Parser};
+use parser::parse::{ParseError, Parser, Walk};
 use std::fs::{read_to_string, File};
 use std::io::Error;
 use std::path;
@@ -15,6 +15,6 @@ fn main() -> Result<(), ParseError> {
     let list = lex.lex();
     let mut parser = Parser::new(list);
     let res = parser.parse_program()?;
-    println!("{:?}", res);
+    res.walk(0);
     Ok(())
 }

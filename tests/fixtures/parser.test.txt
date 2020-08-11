@@ -1,2 +1,3 @@
 int a;
 void b;
+int kkkkkk;
