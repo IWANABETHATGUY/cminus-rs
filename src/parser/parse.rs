@@ -37,6 +37,40 @@ impl Parser {
         }
         false
     }
+    fn match_rel_op(&mut self) -> Option<Operation> {
+        if let Some(token) = self.next_token() {
+            match token.token_type {
+                TokenType::LE => return Some(Operation::LE),
+                TokenType::GE => return Some(Operation::GE),
+                TokenType::GT => return Some(Operation::GT),
+                TokenType::LT => return Some(Operation::LT),
+                TokenType::EQ => return Some(Operation::EQ),
+                TokenType::NE => return Some(Operation::NE),
+                _ => return None,
+            }
+        }
+        None
+    }
+    fn match_add_op(&mut self) -> Option<Operation> {
+        if let Some(token) = self.next_token() {
+            match token.token_type {
+                TokenType::PLUS => return Some(Operation::PLUS),
+                TokenType::MINUS => return Some(Operation::MINUS),
+                _ => return None,
+            }
+        }
+        None
+    }
+    fn match_mul_op(&mut self) -> Option<Operation> {
+        if let Some(token) = self.next_token() {
+            match token.token_type {
+                TokenType::MULTIPLY => return Some(Operation::MULTIPLY),
+                TokenType::TIMES => return Some(Operation::DIVIDE),
+                _ => return None,
+            }
+        }
+        None
+    }
     fn consume(&mut self, step: usize) {
         self.cursor += step;
     }
@@ -148,6 +182,7 @@ impl Parser {
     fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ParseError> {
         self.match_and_consume(TokenType::LBRACE)?;
         let mut local_declaration = vec![];
+        let mut statement_list = vec![];
         while self.match_type_specifier() {
             match self.parse_variable_declaration() {
                 Ok(decl) => match decl {
@@ -163,11 +198,192 @@ impl Parser {
                 }
             }
         }
-
+        while !self.match_token(TokenType::RBRACE) {
+            statement_list.push(self.parse_statement()?);
+        }
         self.match_and_consume(TokenType::RBRACE)?;
-        Ok(CompoundStatement { local_declaration })
+        Ok(CompoundStatement {
+            local_declaration,
+            statement_list,
+        })
     }
-    fn parse_statement() -> Result<Statement, ParseError> {}
+    fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+        match self.next_token() {
+            Some(token) => match token.token_type {
+                TokenType::LBRACE => Ok(Statement::CompoundStatement(
+                    self.parse_compound_statement()?,
+                )),
+                TokenType::IF => Ok(Statement::SelectionStatement()),
+                TokenType::WHILE => Ok(Statement::IterationStatement()),
+                TokenType::RETURN => Ok(Statement::ReturnStatement()),
+                _ => Ok(self.parse_expression_statement()?),
+            },
+            None => {
+                return Err(ParseError::from("expected ``"));
+            }
+        }
+    }
+    fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
+        let mut expression = None;
+        if !self.match_token(TokenType::SEMI) {
+            expression = Some(self.parse_expression()?);
+        }
+        self.match_and_consume(TokenType::SEMI)?;
+        Ok(Statement::ExpressionStatement(ExpressionStatement {
+            expression,
+        }))
+    }
+    // fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+
+    //     Err(ParseError::from("expected a token, get none"))
+    // }
+
+    fn parse_var(&mut self) -> Result<Var, ParseError> {
+        let id = self.match_and_consume(TokenType::ID)?;
+        let mut expression = None;
+        if self.match_token(TokenType::LBRACK) {
+            expression = Some(Box::new(self.parse_expression()?));
+        }
+        Ok(Var {
+            expression,
+            id: Identifier { value: id.content },
+        })
+    }
+    fn parse_assignment_expression(&mut self) -> Result<Expression, ParseError> {
+        let var = self.parse_var()?;
+        self.match_and_consume(TokenType::ASSIGN)?;
+        let expression = self.parse_expression()?;
+        Ok(Expression::Assignment(AssignmentExpression {
+            lhs: var,
+            rhs: Box::new(expression),
+        }))
+    }
+    fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+        let cursor = self.cursor;
+        match self.parse_assignment_expression() {
+            Ok(expr) => {
+                return Ok(expr);
+            }
+            Err(err) => {
+                self.cursor = cursor;
+            }
+        }
+        self.parse_simple_expression()
+    }
+
+    fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
+        let left_expr = self.parse_additive_expression()?;
+        if let Some(op) = self.match_rel_op() {
+            self.consume(1);
+            let right_expr = self.parse_additive_expression()?;
+            return Ok(Expression::BinaryExpression(BinaryExpression {
+                left: Box::new(left_expr),
+                right: Box::new(right_expr),
+                operation: op,
+            }));
+        }
+        Ok(left_expr)
+    }
+
+    fn parse_additive_expression(&mut self) -> Result<Expression, ParseError> {
+        let left_term = self.parse_term()?;
+        if let Some(operation) = self.match_add_op() {
+            self.consume(1);
+            let right_term = self.parse_term()?;
+            return Ok(Expression::BinaryExpression(BinaryExpression {
+                left: Box::new(left_term),
+                right: Box::new(right_term),
+                operation,
+            }));
+        }
+        Ok(left_term)
+    }
+
+    fn parse_term(&mut self) -> Result<Expression, ParseError> {
+        let left_factor = self.parse_factor()?;
+        if let Some(operation) = self.match_mul_op() {
+            self.consume(1);
+            let right_factor = self.parse_factor()?;
+            return Ok(Expression::BinaryExpression(BinaryExpression {
+                left: Box::new(left_factor),
+                right: Box::new(right_factor),
+                operation,
+            }));
+        }
+        Ok(left_factor)
+    }
+
+    fn parse_factor(&mut self) -> Result<Expression, ParseError> {
+        if let Some(token) = self.next_token() {
+            match token.token_type {
+                TokenType::NUM => {
+                    self.consume(1);
+                    return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
+                        value: 0,
+                    })));
+                }
+                TokenType::LPAREN => {
+                    self.consume(1);
+                    let expression = self.parse_expression()?;
+                    self.match_and_consume(TokenType::RPAREN)?;
+                    return Ok(expression);
+                }
+                TokenType::ID => {
+                    let value = token.content.clone();
+                    self.consume(1);
+                    if let Some(token) = self.next_token() {
+                        match token.token_type {
+                            TokenType::LPAREN => {
+                                self.consume(1);
+                                let arguments = self.parse_args()?;
+                                self.match_and_consume(TokenType::RPAREN)?;
+                                return Ok(Expression::Factor(Factor::CallExpression(
+                                    CallExpression {
+                                        arguments,
+                                        id: Identifier { value },
+                                    },
+                                )));
+                            }
+                            TokenType::LBRACK => {
+                                self.consume(1);
+                                let local_expression = self.parse_expression()?;
+                                self.match_and_consume(TokenType::RBRACK)?;
+                                let var = Var {
+                                    id: Identifier { value },
+                                    expression: Some(Box::new(local_expression)),
+                                };
+                                return Ok(Expression::Factor(Factor::Var(var)));
+                            }
+                            _ => {
+                                return Err(ParseError::from(
+                                    "expected `LPAREN`, `ASSIGN`, `LBRACK`",
+                                ));
+                            }
+                        }
+                    } else {
+                        return Ok(Expression::Factor(Factor::Var(Var {
+                            expression: None,
+                            id: Identifier { value },
+                        })));
+                    }
+                }
+                _ => return Err(ParseError::from("expected `Identifier`, `Num`, `LPAREN`")),
+            }
+        }
+
+        return Err(ParseError::from("expected Token found None"));
+    }
+    fn parse_args(&mut self) -> Result<Vec<Expression>, ParseError> {
+        let mut args = vec![];
+        if !self.match_token(TokenType::RPAREN) {
+            args.push(self.parse_expression()?);
+        }
+        while !self.match_token(TokenType::RPAREN) {
+            args.push(self.parse_expression()?);
+        }
+        Ok(args)
+    }
+
     fn parse_param(&mut self) -> Result<Parameter, ParseError> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
@@ -350,22 +566,47 @@ impl Walk for Parameter {
 }
 
 #[derive(Debug)]
-struct CompoundStatement {
+pub struct CompoundStatement {
     local_declaration: Vec<VarDeclaration>,
+    statement_list: Vec<Statement>,
 }
 
 impl Walk for CompoundStatement {
     fn walk(&self, level: usize) {
-        println!("{}Body", " ".repeat(2 * level));
+        println!("{}CompoundStatement", " ".repeat(2 * level));
         for var_decl in self.local_declaration.iter() {
             var_decl.walk(level + 1);
         }
+        for statement in self.statement_list.iter() {
+            statement.walk(level + 1);
+        }
     }
 }
-
 #[derive(Debug)]
-struct ExpressionStatement {
-    expression: Expression,
+pub enum Statement {
+    CompoundStatement(CompoundStatement),
+    ExpressionStatement(ExpressionStatement),
+    SelectionStatement(),
+    IterationStatement(),
+    ReturnStatement(),
+}
+
+impl Walk for Statement {
+    fn walk(&self, level: usize) {
+        match self {
+            Statement::CompoundStatement(stmt) => {
+                stmt.walk(level);
+            }
+            Statement::ExpressionStatement(_) => {}
+            Statement::SelectionStatement() => {}
+            Statement::IterationStatement() => {}
+            Statement::ReturnStatement() => {}
+        }
+    }
+}
+#[derive(Debug)]
+pub struct ExpressionStatement {
+    expression: Option<Expression>,
 }
 
 #[derive(Debug)]
@@ -376,8 +617,8 @@ pub enum Expression {
 }
 #[derive(Debug)]
 pub struct AssignmentExpression {
-    var: Var,
-    expression: Box<Expression>,
+    lhs: Var,
+    rhs: Box<Expression>,
 }
 
 #[derive(Debug)]
@@ -388,10 +629,11 @@ pub struct Var {
 
 #[derive(Debug)]
 pub struct BinaryExpression {
-    left: Term,
-    right: Term,
+    left: Box<Expression>,
+    right: Box<Expression>,
     operation: Operation,
 }
+#[derive(Debug)]
 pub enum Operation {
     GT,
     LT,
@@ -399,25 +641,32 @@ pub enum Operation {
     LE,
     EQ,
     NE,
-    Add,
-    Minus,
-    Multiply,
-    Divide,
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
 }
 // pub enum ReOperation {
-    
+
 // }
 
 // pub enum AddOperation {
-    
+
 // }
 // pub enum MulOperation {
-    
+
 // }
+#[derive(Debug)]
+pub enum Term {}
+#[derive(Debug)]
 pub enum Factor {
-    Expression(Expression),
-    
+    Expression(Box<Expression>),
+    Var(Var),
+    CallExpression(CallExpression),
+    NumberLiteral(NumberLiteral),
 }
-pub enum Term {
-    
+#[derive(Debug)]
+pub struct CallExpression {
+    id: Identifier,
+    arguments: Vec<Expression>,
 }

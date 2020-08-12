@@ -7,7 +7,7 @@ use parser::parse::{Parser, Walk};
 use std::fs::read_to_string;
 use std::path;
 fn main() -> Result<(), ParseError> {
-    let path = path::Path::new("../tests/fixtures/parser.test.txt");
+    let path = path::Path::new("tests/fixtures/parser.test.txt");
     let a = read_to_string(path)?;
     let mut lex = Lexer::new(&a);
     let list = lex.lex();
