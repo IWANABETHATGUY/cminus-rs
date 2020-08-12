@@ -315,11 +315,12 @@ impl Parser {
 
     fn parse_factor(&mut self) -> Result<Expression, ParseError> {
         if let Some(token) = self.next_token() {
+            let content = token.content.clone();
             match token.token_type {
                 TokenType::NUM => {
                     self.consume(1);
                     return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
-                        value: 0,
+                        value: content.parse::<i32>()?,
                     })));
                 }
                 TokenType::LPAREN => {
@@ -597,7 +598,9 @@ impl Walk for Statement {
             Statement::CompoundStatement(stmt) => {
                 stmt.walk(level);
             }
-            Statement::ExpressionStatement(_) => {}
+            Statement::ExpressionStatement(stmt) => {
+                stmt.walk(level);
+            }
             Statement::SelectionStatement() => {}
             Statement::IterationStatement() => {}
             Statement::ReturnStatement() => {}
@@ -609,11 +612,40 @@ pub struct ExpressionStatement {
     expression: Option<Expression>,
 }
 
+impl Walk for ExpressionStatement {
+    fn walk(&self, level: usize) {
+        if let Some(ref expr) = self.expression {
+            expr.walk(level);
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Expression {
     Assignment(AssignmentExpression),
     BinaryExpression(BinaryExpression),
     Factor(Factor),
+}
+
+impl Walk for  Expression {
+    fn walk(&self, level: usize) {
+        match self {
+            Expression::Assignment(assignment) => {
+                println!("{}Assignment", " ".repeat(2 * level));
+                assignment.walk(level);
+            }
+            Expression::BinaryExpression(binary_expr) => {
+                println!("{}BinaryExpression", " ".repeat(2 * level));
+                binary_expr.left.walk(level + 1);
+                binary_expr.operation.walk(level + 1);
+                binary_expr.right.walk(level + 1);
+            }
+            Expression::Factor(factor) => {
+                factor.walk(level);
+            }
+        }
+    }
+    
 }
 #[derive(Debug)]
 pub struct AssignmentExpression {
@@ -621,10 +653,25 @@ pub struct AssignmentExpression {
     rhs: Box<Expression>,
 }
 
+impl Walk for AssignmentExpression {
+    fn walk(&self, level: usize) {
+        self.lhs.walk(level + 1);
+        self.rhs.walk(level + 1);
+    }
+    
+}
+
 #[derive(Debug)]
 pub struct Var {
     id: Identifier,
     expression: Option<Box<Expression>>,
+}
+
+impl Walk for Var {
+    fn walk(&self, level: usize) {
+        self.id.walk(level);
+    }
+    
 }
 
 #[derive(Debug)]
@@ -646,6 +693,13 @@ pub enum Operation {
     MULTIPLY,
     DIVIDE,
 }
+
+impl Walk for  Operation {
+    fn walk(&self, level: usize) {
+        println!("{}{:?}"," ".repeat(2 * level), self);
+    }
+    
+}
 // pub enum ReOperation {
 
 // }
@@ -656,14 +710,33 @@ pub enum Operation {
 // pub enum MulOperation {
 
 // }
-#[derive(Debug)]
-pub enum Term {}
+
 #[derive(Debug)]
 pub enum Factor {
     Expression(Box<Expression>),
     Var(Var),
     CallExpression(CallExpression),
     NumberLiteral(NumberLiteral),
+}
+
+impl Walk for  Factor {
+    fn walk(&self, level: usize) {
+        match self {
+            Factor::Expression(expr) => {
+                expr.walk(level);
+            }
+            Factor::Var(var) => {
+                var.walk(level);
+            }
+            Factor::CallExpression(call) => {
+                // call.walk(level);
+            }
+            Factor::NumberLiteral(num) => {
+                num.walk(level);
+            }
+        }
+    }
+    
 }
 #[derive(Debug)]
 pub struct CallExpression {
