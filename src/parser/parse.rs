@@ -303,7 +303,7 @@ impl Parser {
         let left_factor = self.parse_factor()?;
         if let Some(operation) = self.match_mul_op() {
             self.consume(1);
-            let right_factor = self.parse_factor()?;
+            let right_factor = self.parse_term()?;
             return Ok(Expression::BinaryExpression(BinaryExpression {
                 left: Box::new(left_factor),
                 right: Box::new(right_factor),
@@ -743,3 +743,5 @@ pub struct CallExpression {
     id: Identifier,
     arguments: Vec<Expression>,
 }
+
+//TODO: 还有这种情况没有处理
