@@ -163,9 +163,11 @@ impl Parser {
                 }
             }
         }
+
         self.match_and_consume(TokenType::RBRACE)?;
         Ok(CompoundStatement { local_declaration })
     }
+    fn parse_statement() -> Result<Statement, ParseError> {}
     fn parse_param(&mut self) -> Result<Parameter, ParseError> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
@@ -359,4 +361,63 @@ impl Walk for CompoundStatement {
             var_decl.walk(level + 1);
         }
     }
+}
+
+#[derive(Debug)]
+struct ExpressionStatement {
+    expression: Expression,
+}
+
+#[derive(Debug)]
+pub enum Expression {
+    Assignment(AssignmentExpression),
+    BinaryExpression(BinaryExpression),
+    Factor(Factor),
+}
+#[derive(Debug)]
+pub struct AssignmentExpression {
+    var: Var,
+    expression: Box<Expression>,
+}
+
+#[derive(Debug)]
+pub struct Var {
+    id: Identifier,
+    expression: Option<Box<Expression>>,
+}
+
+#[derive(Debug)]
+pub struct BinaryExpression {
+    left: Term,
+    right: Term,
+    operation: Operation,
+}
+pub enum Operation {
+    GT,
+    LT,
+    GE,
+    LE,
+    EQ,
+    NE,
+    Add,
+    Minus,
+    Multiply,
+    Divide,
+}
+// pub enum ReOperation {
+    
+// }
+
+// pub enum AddOperation {
+    
+// }
+// pub enum MulOperation {
+    
+// }
+pub enum Factor {
+    Expression(Expression),
+    
+}
+pub enum Term {
+    
 }
