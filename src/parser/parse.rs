@@ -1,51 +1,13 @@
 #![feature(type_alias_enum_variants)]
-use crate::lexer::{
-    lex,
-    token::{Token, TokenType},
+use crate::{
+    lexer::token::{Token, TokenType},
+    parser::error::ParseError,
 };
 use std::fmt::{Debug, Display};
 pub trait Walk {
     fn walk(&self, level: usize);
 }
-pub struct ParseError {
-    error: String,
-}
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.error)
-    }
-}
-impl Debug for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.error)
-    }
-}
-impl From<std::io::Error> for ParseError {
-    fn from(error: std::io::Error) -> Self {
-        ParseError {
-            error: error.to_string(),
-        }
-    }
-}
-impl From<std::num::ParseIntError> for ParseError {
-    fn from(error: std::num::ParseIntError) -> Self {
-        ParseError {
-            error: error.to_string(),
-        }
-    }
-}
-impl From<String> for ParseError {
-    fn from(error: String) -> Self {
-        ParseError { error }
-    }
-}
-impl From<&str> for ParseError {
-    fn from(error: &str) -> Self {
-        ParseError {
-            error: error.to_string(),
-        }
-    }
-}
+
 pub struct Parser {
     token_list: Vec<Token>,
     cursor: usize,
@@ -397,5 +359,4 @@ impl Walk for CompoundStatement {
             var_decl.walk(level + 1);
         }
     }
-    
 }
