@@ -743,5 +743,3 @@ pub struct CallExpression {
     id: Identifier,
     arguments: Vec<Expression>,
 }
-
-//TODO: 还有这种情况没有处理
