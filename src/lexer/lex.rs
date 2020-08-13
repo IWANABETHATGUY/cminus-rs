@@ -63,8 +63,7 @@ impl Lexer {
         }
         let mut result = "".to_string();
         let mut save = false;
-        // let mut start_index = 0;
-        // let mut token =
+       
         let mut token: Option<Token> = None;
         let mut state = State::START;
         let mut cur_token_type = TokenType::ERROR;
@@ -72,7 +71,6 @@ impl Lexer {
         let mut cur_column = 0;
         let mut flag = false;
         let mut start_index = self.cursor;
-        let start_position = Position::new(0, 0);
         while state != State::DONE && self.cursor < self.length {
             let cur_char = self.file_vec[self.cursor];
             self.next_char();

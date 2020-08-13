@@ -58,8 +58,8 @@ pub struct Token {
     pub end_index: usize,
 }
 pub struct Range {
-    start: Position,
-    end: Position,
+    pub start: Position,
+    pub end: Position,
 }
 impl Token {
     pub fn new(
@@ -80,18 +80,18 @@ impl Token {
         }
     }
 
-    pub fn get_token_type(&self) -> TokenType {
-        self.token_type
-    }
+    // pub fn get_token_type(&self) -> TokenType {
+    //     self.token_type
+    // }
 
-    pub fn get_token_string(&self) -> String {
-        self.content.clone()
-    }
+    // pub fn get_token_string(&self) -> String {
+    //     self.content.clone()
+    // }
 
-    pub fn get_token_range(&self) -> Range {
-        Range {
-            start: self.start_position.clone(),
-            end: self.end_position.clone(),
-        }
-    }
+    // pub fn get_token_range(&self) -> Range {
+    //     Range {
+    //         start: self.start_position.clone(),
+    //         end: self.end_position.clone(),
+    //     }
+    // }
 }

@@ -2,7 +2,7 @@ use crate::{
     lexer::token::{Token, TokenType},
     parser::error::ParseError,
 };
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 pub trait Walk {
     fn walk(&self, level: usize);
 }
@@ -345,7 +345,7 @@ impl Parser {
                     self.consume(1);
                     let expression = self.parse_expression()?;
                     self.match_and_consume(TokenType::RPAREN)?;
-                    return Ok(expression);
+                    return Ok(Expression::Factor(Factor::Expression(Box::new(expression))));
                 }
                 TokenType::ID => {
                     let value = token.content.clone();
