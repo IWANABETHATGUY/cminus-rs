@@ -30,7 +30,6 @@ impl Parser {
         false
     }
     fn match_type_specifier(&mut self) -> bool {
-        // let next_token = self.next_token();
         if let Some(token) = self.next_token() {
             return token.token_type == TokenType::VOID || token.token_type == TokenType::INT;
         }
@@ -111,7 +110,6 @@ impl Parser {
             self.backtrack(2);
             return self.parse_variable_declaration();
         }
-        // return Err(ParseError::from("expected `int`,`void`"));
     }
 
     fn parse_variable_declaration(&mut self) -> Result<Declaration, ParseError> {
@@ -136,9 +134,7 @@ impl Parser {
             num,
         }))
     }
-    // fn parse_variable_declaration(&self) {
 
-    // }
     fn parse_function_declaration(&mut self) -> Result<Declaration, ParseError> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
@@ -212,7 +208,9 @@ impl Parser {
                 TokenType::LBRACE => Ok(Statement::CompoundStatement(
                     self.parse_compound_statement()?,
                 )),
-                TokenType::IF => Ok(Statement::SelectionStatement()),
+                TokenType::IF => Ok(Statement::SelectionStatement(
+                    self.parse_selection_statement()?,
+                )),
                 TokenType::WHILE => Ok(Statement::IterationStatement()),
                 TokenType::RETURN => Ok(Statement::ReturnStatement()),
                 _ => Ok(self.parse_expression_statement()?),
@@ -221,6 +219,23 @@ impl Parser {
                 return Err(ParseError::from("expected ``"));
             }
         }
+    }
+    fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ParseError> {
+        self.match_and_consume(TokenType::IF)?;
+        self.match_and_consume(TokenType::LPAREN)?;
+        let test = self.parse_expression()?;
+        self.match_and_consume(TokenType::RPAREN)?;
+        let consequent = Box::new(self.parse_statement()?);
+        let mut alternative = None;
+        if self.match_token(TokenType::ELSE) {
+            self.consume(1);
+            alternative = Some(Box::new(self.parse_statement()?));
+        }
+        Ok(SelectionStatement {
+            consequent,
+            alternative,
+            test,
+        })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
         let mut expression = None;
@@ -232,10 +247,6 @@ impl Parser {
             expression,
         }))
     }
-    // fn parse_expression(&mut self) -> Result<Expression, ParseError> {
-
-    //     Err(ParseError::from("expected a token, get none"))
-    // }
 
     fn parse_var(&mut self) -> Result<Var, ParseError> {
         let id = self.match_and_consume(TokenType::ID)?;
@@ -588,7 +599,7 @@ impl Walk for CompoundStatement {
 pub enum Statement {
     CompoundStatement(CompoundStatement),
     ExpressionStatement(ExpressionStatement),
-    SelectionStatement(),
+    SelectionStatement(SelectionStatement),
     IterationStatement(),
     ReturnStatement(),
 }
@@ -602,9 +613,28 @@ impl Walk for Statement {
             Statement::ExpressionStatement(stmt) => {
                 stmt.walk(level);
             }
-            Statement::SelectionStatement() => {}
+            Statement::SelectionStatement(stmt) => {
+                stmt.walk(level);
+            }
             Statement::IterationStatement() => {}
             Statement::ReturnStatement() => {}
+        }
+    }
+}
+#[derive(Debug)]
+pub struct SelectionStatement {
+    test: Expression,
+    consequent: Box<Statement>,
+    alternative: Option<Box<Statement>>,
+}
+
+impl Walk for SelectionStatement {
+    fn walk(&self, level: usize) {
+        println!("{}SelectionStatement", " ".repeat(2 * level));
+        self.test.walk(level + 1);
+        self.consequent.walk(level + 1);
+        if let Some(ref consequent) = self.alternative {
+            consequent.walk(level + 1);
         }
     }
 }
