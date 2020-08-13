@@ -14,6 +14,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(token_list: Vec<Token>) -> Parser {
+        let token_list = token_list.into_iter().filter(|token| {token.token_type != TokenType::COMMENT }).collect();
         Self {
             token_list,
             cursor: 0,
@@ -211,7 +212,9 @@ impl Parser {
                 TokenType::IF => Ok(Statement::SelectionStatement(
                     self.parse_selection_statement()?,
                 )),
-                TokenType::WHILE => Ok(Statement::IterationStatement()),
+                TokenType::WHILE => Ok(Statement::IterationStatement(
+                    self.parse_iteration_statement()?,
+                )),
                 TokenType::RETURN => Ok(Statement::ReturnStatement(self.parse_return_statement()?)),
                 _ => Ok(self.parse_expression_statement()?),
             },
@@ -219,6 +222,12 @@ impl Parser {
                 return Err(ParseError::from("expected ``"));
             }
         }
+    }
+    fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ParseError> {
+        self.match_and_consume(TokenType::WHILE)?;
+        let expression = self.parse_expression()?;
+        let body = Some(Box::new(self.parse_statement()?));
+        Ok(IterationStatement { test: expression, body })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ParseError> {
         self.match_and_consume(TokenType::IF)?;
@@ -608,7 +617,7 @@ pub enum Statement {
     CompoundStatement(CompoundStatement),
     ExpressionStatement(ExpressionStatement),
     SelectionStatement(SelectionStatement),
-    IterationStatement(),
+    IterationStatement(IterationStatement),
     ReturnStatement(ReturnStatement),
 }
 
@@ -624,7 +633,9 @@ impl Walk for Statement {
             Statement::SelectionStatement(stmt) => {
                 stmt.walk(level);
             }
-            Statement::IterationStatement() => {}
+            Statement::IterationStatement(stmt) => {
+                stmt.walk(level);
+            }
             Statement::ReturnStatement(stmt) => {
                 stmt.walk(level);
             }
@@ -645,6 +656,21 @@ impl Walk for SelectionStatement {
         self.consequent.walk(level + 1);
         if let Some(ref consequent) = self.alternative {
             consequent.walk(level + 1);
+        }
+    }
+}
+#[derive(Debug)]
+pub struct IterationStatement {
+    test: Expression,
+    body: Option<Box<Statement>>,
+}
+
+impl Walk for IterationStatement {
+    fn walk(&self, level: usize) {
+        println!("{}IterationStatement", " ".repeat(2 * level));
+        self.test.walk(level + 1);
+        if let Some(ref body) = self.body {
+            body.walk(level + 1);
         }
     }
 }
