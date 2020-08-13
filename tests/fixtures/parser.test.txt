@@ -1,4 +1,5 @@
 int test(int a[]) {
-   
+   int d;
    222 > (222 + 333) / 2 ;
+   d = fuck(2, shit(2));
 }

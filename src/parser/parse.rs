@@ -1,4 +1,3 @@
-#![feature(type_alias_enum_variants)]
 use crate::{
     lexer::token::{Token, TokenType},
     parser::error::ParseError,
@@ -264,7 +263,7 @@ impl Parser {
             Ok(expr) => {
                 return Ok(expr);
             }
-            Err(err) => {
+            Err(_) => {
                 self.cursor = cursor;
             }
         }
@@ -356,9 +355,10 @@ impl Parser {
                                 return Ok(Expression::Factor(Factor::Var(var)));
                             }
                             _ => {
-                                return Err(ParseError::from(
-                                    "expected `LPAREN`, `ASSIGN`, `LBRACK`",
-                                ));
+                                return Ok(Expression::Factor(Factor::Var(Var {
+                                    expression: None,
+                                    id: Identifier { value },
+                                })));
                             }
                         }
                     } else {
@@ -380,6 +380,7 @@ impl Parser {
             args.push(self.parse_expression()?);
         }
         while !self.match_token(TokenType::RPAREN) {
+            self.match_and_consume(TokenType::COMMA)?;
             args.push(self.parse_expression()?);
         }
         Ok(args)
@@ -627,7 +628,7 @@ pub enum Expression {
     Factor(Factor),
 }
 
-impl Walk for  Expression {
+impl Walk for Expression {
     fn walk(&self, level: usize) {
         match self {
             Expression::Assignment(assignment) => {
@@ -645,7 +646,6 @@ impl Walk for  Expression {
             }
         }
     }
-    
 }
 #[derive(Debug)]
 pub struct AssignmentExpression {
@@ -658,7 +658,6 @@ impl Walk for AssignmentExpression {
         self.lhs.walk(level + 1);
         self.rhs.walk(level + 1);
     }
-    
 }
 
 #[derive(Debug)]
@@ -671,7 +670,6 @@ impl Walk for Var {
     fn walk(&self, level: usize) {
         self.id.walk(level);
     }
-    
 }
 
 #[derive(Debug)]
@@ -694,23 +692,11 @@ pub enum Operation {
     DIVIDE,
 }
 
-impl Walk for  Operation {
+impl Walk for Operation {
     fn walk(&self, level: usize) {
-        println!("{}{:?}"," ".repeat(2 * level), self);
+        println!("{}{:?}", " ".repeat(2 * level), self);
     }
-    
 }
-// pub enum ReOperation {
-
-// }
-
-// pub enum AddOperation {
-
-// }
-// pub enum MulOperation {
-
-// }
-
 #[derive(Debug)]
 pub enum Factor {
     Expression(Box<Expression>),
@@ -719,7 +705,7 @@ pub enum Factor {
     NumberLiteral(NumberLiteral),
 }
 
-impl Walk for  Factor {
+impl Walk for Factor {
     fn walk(&self, level: usize) {
         match self {
             Factor::Expression(expr) => {
@@ -729,17 +715,27 @@ impl Walk for  Factor {
                 var.walk(level);
             }
             Factor::CallExpression(call) => {
-                // call.walk(level);
+                call.walk(level);
             }
             Factor::NumberLiteral(num) => {
                 num.walk(level);
             }
         }
     }
-    
 }
 #[derive(Debug)]
 pub struct CallExpression {
     id: Identifier,
     arguments: Vec<Expression>,
+}
+
+impl Walk for CallExpression {
+    fn walk(&self, level: usize) {
+        println!("{}CallExpression", " ".repeat(level * 2));
+        self.id.walk(level + 1);
+        println!("{}Arguments", " ".repeat((level + 1) * 2));
+        for arg in self.arguments.iter() {
+            arg.walk(level + 2);
+        }
+    }
 }
