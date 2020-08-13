@@ -212,7 +212,7 @@ impl Parser {
                     self.parse_selection_statement()?,
                 )),
                 TokenType::WHILE => Ok(Statement::IterationStatement()),
-                TokenType::RETURN => Ok(Statement::ReturnStatement()),
+                TokenType::RETURN => Ok(Statement::ReturnStatement(self.parse_return_statement()?)),
                 _ => Ok(self.parse_expression_statement()?),
             },
             None => {
@@ -236,6 +236,14 @@ impl Parser {
             alternative,
             test,
         })
+    }
+    fn parse_return_statement(&mut self) -> Result<ReturnStatement, ParseError> {
+        self.match_and_consume(TokenType::RETURN)?;
+        let mut expression = None;
+        if !self.match_token(TokenType::SEMI) {
+            expression = Some(self.parse_expression()?);
+        }
+        Ok(ReturnStatement { expression })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
         let mut expression = None;
@@ -601,7 +609,7 @@ pub enum Statement {
     ExpressionStatement(ExpressionStatement),
     SelectionStatement(SelectionStatement),
     IterationStatement(),
-    ReturnStatement(),
+    ReturnStatement(ReturnStatement),
 }
 
 impl Walk for Statement {
@@ -617,7 +625,9 @@ impl Walk for Statement {
                 stmt.walk(level);
             }
             Statement::IterationStatement() => {}
-            Statement::ReturnStatement() => {}
+            Statement::ReturnStatement(stmt) => {
+                stmt.walk(level);
+            }
         }
     }
 }
@@ -635,6 +645,19 @@ impl Walk for SelectionStatement {
         self.consequent.walk(level + 1);
         if let Some(ref consequent) = self.alternative {
             consequent.walk(level + 1);
+        }
+    }
+}
+#[derive(Debug)]
+pub struct ReturnStatement {
+    expression: Option<Expression>,
+}
+
+impl Walk for ReturnStatement {
+    fn walk(&self, level: usize) {
+        println!("{}ReturnStatement", " ".repeat(2 * level));
+        if let Some(ref expr) = self.expression {
+            expr.walk(level + 1);
         }
     }
 }
