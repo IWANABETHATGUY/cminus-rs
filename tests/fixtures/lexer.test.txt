@@ -7,3 +7,5 @@ void if 11222
 while
 a * 3
 int a = 3;
+a == 3
+()[]{}

@@ -2,18 +2,18 @@ mod lexer;
 mod parser;
 
 use lexer::lex::Lexer;
-use lexer::token::{Token, TokenType};
-use parser::parse::Parser;
-use std::fs::{read_to_string, File};
-use std::io::Error;
+use parser::error::ParseError;
+use parser::parse::{Parser, Walk};
+use std::fs::read_to_string;
 use std::path;
-fn main() -> Result<(), Error> {
-    let path = path::Path::new("test.txt");
+fn main() -> Result<(), ParseError> {
+    let path = path::Path::new("tests/fixtures/parser.test.txt");
     let a = read_to_string(path)?;
     let mut lex = Lexer::new(&a);
     let list = lex.lex();
-    for token in list {
-        println!("{:?}", token);
-    }
+    let mut parser = Parser::new(list);
+    let res = parser.parse_program()?;
+
+    res.walk(0);
     Ok(())
 }
