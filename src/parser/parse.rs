@@ -153,7 +153,6 @@ impl Parser {
                 TokenType::LPAREN => {}
                 _ => {
                     let mut params_list = vec![];
-                    params_list.push(self.parse_param()?);
                     while !self.match_token(TokenType::RPAREN) {
                         self.match_and_consume(TokenType::COMMA)?;
                         params_list.push(self.parse_param()?);
