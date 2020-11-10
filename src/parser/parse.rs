@@ -660,7 +660,7 @@ pub struct SelectionStatement {
 
 impl Walk for SelectionStatement {
     fn walk(&self, level: usize) -> String {
-        let mut ast = format!("{}SelectionStatement\n", " ".repeat(2 * level));
+        let ast = format!("{}SelectionStatement\n", " ".repeat(2 * level));
         let mut children = vec![self.test.walk(level + 1), self.consequent.walk(level + 1)];
         if let Some(ref consequent) = self.alternative {
             children.push(consequent.walk(level + 1));
@@ -731,12 +731,12 @@ impl Walk for Expression {
     fn walk(&self, level: usize) -> String {
         match self {
             Expression::Assignment(assignment) => {
-                let mut ast = format!("{}Assignment", " ".repeat(2 * level));
+                let ast = format!("{}Assignment", " ".repeat(2 * level));
                 assignment.walk(level);
                 ast
             }
             Expression::BinaryExpression(binary_expr) => {
-                let mut ast = format!("{}BinaryExpression\n", " ".repeat(2 * level));
+                let ast = format!("{}BinaryExpression\n", " ".repeat(2 * level));
                 let children = vec![
                     binary_expr.left.walk(level + 1),
                     binary_expr.operation.walk(level + 1),
@@ -823,8 +823,8 @@ pub struct CallExpression {
 
 impl Walk for CallExpression {
     fn walk(&self, level: usize) -> String {
-        let mut ast = format!("{}CallExpression\n", " ".repeat(level * 2));
-        let mut children = vec![
+        let ast = format!("{}CallExpression\n", " ".repeat(level * 2));
+        let children = vec![
             self.id.walk(level + 1),
             format!("{}Arguments", " ".repeat((level + 1) * 2)),
             self.arguments
