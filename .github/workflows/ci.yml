@@ -25,3 +25,4 @@ jobs:
           BRANCH: master
           FOLDER: wasm/www/dist
           REPOSITORY_NAME: IWANABETHATGUY/tinylang-rs
+          TARGET_FOLDER: .
