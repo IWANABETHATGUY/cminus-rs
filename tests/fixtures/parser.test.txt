@@ -1,5 +1,5 @@
 int a[10];
-int fibonacci() {
+int fibonacci(int i) {
    if (i == 1) {
       return 1;
    }
