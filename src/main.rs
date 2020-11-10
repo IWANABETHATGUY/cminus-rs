@@ -14,6 +14,6 @@ fn main() -> Result<(), ParseError> {
     let mut parser = Parser::new(list);
     let res = parser.parse_program()?;
 
-    res.walk(0);
+    println!("{}", res.walk(0));
     Ok(())
 }
