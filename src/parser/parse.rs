@@ -4,7 +4,7 @@ use crate::{
 };
 use std::fmt::Debug;
 pub trait Walk {
-    fn walk(&self, level: usize);
+    fn walk(&self, level: usize) -> String;
 }
 
 pub struct Parser {
@@ -14,7 +14,10 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(token_list: Vec<Token>) -> Parser {
-        let token_list = token_list.into_iter().filter(|token| {token.token_type != TokenType::COMMENT }).collect();
+        let token_list = token_list
+            .into_iter()
+            .filter(|token| token.token_type != TokenType::COMMENT)
+            .collect();
         Self {
             token_list,
             cursor: 0,
@@ -226,7 +229,10 @@ impl Parser {
         self.match_and_consume(TokenType::WHILE)?;
         let expression = self.parse_expression()?;
         let body = Some(Box::new(self.parse_statement()?));
-        Ok(IterationStatement { test: expression, body })
+        Ok(IterationStatement {
+            test: expression,
+            body,
+        })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ParseError> {
         self.match_and_consume(TokenType::IF)?;
@@ -458,11 +464,13 @@ pub struct Program {
     declarations: Vec<Declaration>,
 }
 impl Walk for Program {
-    fn walk(&self, level: usize) {
-        println!("{}Program", " ".repeat(2 * level));
+    fn walk(&self, level: usize) -> String {
+        let ast = format!("{}Program\n", " ".repeat(2 * level));
+        let mut children = vec![];
         for decl in self.declarations.iter() {
-            decl.walk(level + 1);
+            children.push(decl.walk(level + 1))
         }
+        ast + &children.join("\n")
     }
 }
 // impl Debug for Program {
@@ -479,12 +487,16 @@ pub struct FunctionDeclaration {
     body: CompoundStatement,
 }
 impl Walk for FunctionDeclaration {
-    fn walk(&self, level: usize) {
-        println!("{}FunctionDeclaration", " ".repeat(2 * level));
-        self.type_specifier.walk(level + 1);
-        self.id.walk(level + 1);
-        self.params.walk(level + 1);
-        self.body.walk(level + 1);
+    fn walk(&self, level: usize) -> String {
+        let mut ast = format!("{}FunctionDeclaration\n", " ".repeat(2 * level));
+        ast += &vec![
+            self.type_specifier.walk(level + 1),
+            self.id.walk(level + 1),
+            self.params.walk(level + 1),
+            self.body.walk(level + 1),
+        ]
+        .join("\n");
+        ast
     }
 }
 #[derive(Debug)]
@@ -494,13 +506,13 @@ pub struct VarDeclaration {
     num: Option<NumberLiteral>,
 }
 impl Walk for VarDeclaration {
-    fn walk(&self, level: usize) {
-        println!("{}VarDeclaration", " ".repeat(2 * level));
-        self.id.walk(level + 1);
-        self.type_specifier.walk(level + 1);
+    fn walk(&self, level: usize) -> String {
+        let ast = format!("{}VarDeclaration\n", " ".repeat(2 * level));
+        let mut children = vec![self.id.walk(level + 1), self.type_specifier.walk(level + 1)];
         if let Some(ref num) = self.num {
-            num.walk(level + 1);
+            children.push(num.walk(level + 1));
         }
+        ast + &children.join("\n")
     }
 }
 #[derive(Debug)]
@@ -509,14 +521,10 @@ pub enum Declaration {
     VarDeclaration(VarDeclaration),
 }
 impl Walk for Declaration {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         match &self {
-            Declaration::VarDeclaration(var_decl) => {
-                var_decl.walk(level);
-            }
-            Declaration::FunctionDeclaration(func_decl) => {
-                func_decl.walk(level);
-            }
+            Declaration::VarDeclaration(var_decl) => var_decl.walk(level),
+            Declaration::FunctionDeclaration(func_decl) => func_decl.walk(level),
         }
     }
 }
@@ -525,8 +533,8 @@ pub struct Identifier {
     value: String,
 }
 impl Walk for Identifier {
-    fn walk(&self, level: usize) {
-        println!("{}Identifier({})", " ".repeat(2 * level), self.value);
+    fn walk(&self, level: usize) -> String {
+        format!("{}Identifier({})", " ".repeat(2 * level), self.value)
     }
 }
 #[derive(Debug)]
@@ -534,8 +542,8 @@ pub struct NumberLiteral {
     value: i32,
 }
 impl Walk for NumberLiteral {
-    fn walk(&self, level: usize) {
-        println!("{}NumberLiteral({})", " ".repeat(2 * level), self.value);
+    fn walk(&self, level: usize) -> String {
+        format!("{}NumberLiteral({})", " ".repeat(2 * level), self.value)
     }
 }
 #[derive(Debug)]
@@ -544,8 +552,8 @@ pub struct TypeSpecifier {
 }
 
 impl Walk for TypeSpecifier {
-    fn walk(&self, level: usize) {
-        println!("{}TypeSpecifier({:?})", " ".repeat(2 * level), self.kind);
+    fn walk(&self, level: usize) -> String {
+        format!("{}TypeSpecifier({:?})", " ".repeat(2 * level), self.kind)
     }
 }
 #[derive(Debug)]
@@ -560,16 +568,17 @@ pub enum Params {
 }
 
 impl Walk for Params {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         match self {
-            Params::Void => {
-                println!("{}Void", " ".repeat(2 * level));
-            }
+            Params::Void => format!("{}Void", " ".repeat(2 * level)),
             Params::ParamsList { params } => {
-                println!("{}ParameterList", " ".repeat(2 * level));
-                for param in params.iter() {
-                    param.walk(level + 1);
-                }
+                let mut ast = format!("{}ParameterList", " ".repeat(2 * level));
+                ast += &params
+                    .iter()
+                    .map(|param| param.walk(level + 1))
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                ast
             }
         }
     }
@@ -583,14 +592,14 @@ pub struct Parameter {
 }
 
 impl Walk for Parameter {
-    fn walk(&self, level: usize) {
-        println!(
+    fn walk(&self, level: usize) -> String {
+        format!(
             "{}Parameter({:?} {}{})",
             " ".repeat(2 * level),
             self.type_specifier.kind,
             self.id.value,
             if self.is_array { "[]" } else { "" }
-        );
+        )
     }
 }
 
@@ -601,14 +610,25 @@ pub struct CompoundStatement {
 }
 
 impl Walk for CompoundStatement {
-    fn walk(&self, level: usize) {
-        println!("{}CompoundStatement", " ".repeat(2 * level));
-        for var_decl in self.local_declaration.iter() {
-            var_decl.walk(level + 1);
-        }
-        for statement in self.statement_list.iter() {
-            statement.walk(level + 1);
-        }
+    fn walk(&self, level: usize) -> String {
+        let mut ast = format!("{}CompoundStatement", " ".repeat(2 * level));
+        ast = ast
+            + &self
+                .local_declaration
+                .iter()
+                .map(|decl| decl.walk(level + 1))
+                .filter(|item| !item.is_empty())
+                .collect::<Vec<String>>()
+                .join("\n")
+            + "\n"
+            + &self
+                .statement_list
+                .iter()
+                .map(|stmt| stmt.walk(level + 1))
+                .filter(|item| !item.is_empty())
+                .collect::<Vec<String>>()
+                .join("\n");
+        ast
     }
 }
 #[derive(Debug)]
@@ -621,23 +641,13 @@ pub enum Statement {
 }
 
 impl Walk for Statement {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         match self {
-            Statement::CompoundStatement(stmt) => {
-                stmt.walk(level);
-            }
-            Statement::ExpressionStatement(stmt) => {
-                stmt.walk(level);
-            }
-            Statement::SelectionStatement(stmt) => {
-                stmt.walk(level);
-            }
-            Statement::IterationStatement(stmt) => {
-                stmt.walk(level);
-            }
-            Statement::ReturnStatement(stmt) => {
-                stmt.walk(level);
-            }
+            Statement::CompoundStatement(stmt) => stmt.walk(level),
+            Statement::ExpressionStatement(stmt) => stmt.walk(level),
+            Statement::SelectionStatement(stmt) => stmt.walk(level),
+            Statement::IterationStatement(stmt) => stmt.walk(level),
+            Statement::ReturnStatement(stmt) => stmt.walk(level),
         }
     }
 }
@@ -649,13 +659,17 @@ pub struct SelectionStatement {
 }
 
 impl Walk for SelectionStatement {
-    fn walk(&self, level: usize) {
-        println!("{}SelectionStatement", " ".repeat(2 * level));
-        self.test.walk(level + 1);
-        self.consequent.walk(level + 1);
+    fn walk(&self, level: usize) -> String {
+        let mut ast = format!("{}SelectionStatement\n", " ".repeat(2 * level));
+        let mut children = vec![self.test.walk(level + 1), self.consequent.walk(level + 1)];
         if let Some(ref consequent) = self.alternative {
-            consequent.walk(level + 1);
+            children.push(consequent.walk(level + 1));
         }
+        ast + &children
+            .into_iter()
+            .filter(|child| !child.is_empty())
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }
 #[derive(Debug)]
@@ -665,12 +679,16 @@ pub struct IterationStatement {
 }
 
 impl Walk for IterationStatement {
-    fn walk(&self, level: usize) {
-        println!("{}IterationStatement", " ".repeat(2 * level));
-        self.test.walk(level + 1);
+    fn walk(&self, level: usize) -> String {
+        let ast = format!("{}IterationStatement\n", " ".repeat(2 * level));
+        let mut children = vec![self.test.walk(level + 1)];
         if let Some(ref body) = self.body {
-            body.walk(level + 1);
+            let body_ast_string = body.walk(level + 1);
+            if !body_ast_string.is_empty() {
+                children.push(body_ast_string);
+            }
         }
+        ast + &children.join("\n")
     }
 }
 #[derive(Debug)]
@@ -679,11 +697,12 @@ pub struct ReturnStatement {
 }
 
 impl Walk for ReturnStatement {
-    fn walk(&self, level: usize) {
-        println!("{}ReturnStatement", " ".repeat(2 * level));
+    fn walk(&self, level: usize) -> String {
+        let mut ast = format!("{}ReturnStatement\n", " ".repeat(2 * level));
         if let Some(ref expr) = self.expression {
-            expr.walk(level + 1);
+            ast += &expr.walk(level + 1);
         }
+        ast
     }
 }
 #[derive(Debug)]
@@ -692,9 +711,11 @@ pub struct ExpressionStatement {
 }
 
 impl Walk for ExpressionStatement {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         if let Some(ref expr) = self.expression {
-            expr.walk(level);
+            expr.walk(level)
+        } else {
+            "".to_string()
         }
     }
 }
@@ -707,21 +728,23 @@ pub enum Expression {
 }
 
 impl Walk for Expression {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         match self {
             Expression::Assignment(assignment) => {
-                println!("{}Assignment", " ".repeat(2 * level));
+                let mut ast = format!("{}Assignment", " ".repeat(2 * level));
                 assignment.walk(level);
+                ast
             }
             Expression::BinaryExpression(binary_expr) => {
-                println!("{}BinaryExpression", " ".repeat(2 * level));
-                binary_expr.left.walk(level + 1);
-                binary_expr.operation.walk(level + 1);
-                binary_expr.right.walk(level + 1);
+                let mut ast = format!("{}BinaryExpression\n", " ".repeat(2 * level));
+                let children = vec![
+                    binary_expr.left.walk(level + 1),
+                    binary_expr.operation.walk(level + 1),
+                    binary_expr.right.walk(level + 1),
+                ];
+                ast + &children.join("\n")
             }
-            Expression::Factor(factor) => {
-                factor.walk(level);
-            }
+            Expression::Factor(factor) => factor.walk(level),
         }
     }
 }
@@ -732,9 +755,8 @@ pub struct AssignmentExpression {
 }
 
 impl Walk for AssignmentExpression {
-    fn walk(&self, level: usize) {
-        self.lhs.walk(level + 1);
-        self.rhs.walk(level + 1);
+    fn walk(&self, level: usize) -> String {
+        self.lhs.walk(level + 1) + &self.rhs.walk(level + 1)
     }
 }
 
@@ -745,8 +767,8 @@ pub struct Var {
 }
 
 impl Walk for Var {
-    fn walk(&self, level: usize) {
-        self.id.walk(level);
+    fn walk(&self, level: usize) -> String {
+        self.id.walk(level)
     }
 }
 
@@ -771,8 +793,8 @@ pub enum Operation {
 }
 
 impl Walk for Operation {
-    fn walk(&self, level: usize) {
-        println!("{}{:?}", " ".repeat(2 * level), self);
+    fn walk(&self, level: usize) -> String {
+        format!("{}{:?}", " ".repeat(2 * level), self)
     }
 }
 #[derive(Debug)]
@@ -784,20 +806,12 @@ pub enum Factor {
 }
 
 impl Walk for Factor {
-    fn walk(&self, level: usize) {
+    fn walk(&self, level: usize) -> String {
         match self {
-            Factor::Expression(expr) => {
-                expr.walk(level);
-            }
-            Factor::Var(var) => {
-                var.walk(level);
-            }
-            Factor::CallExpression(call) => {
-                call.walk(level);
-            }
-            Factor::NumberLiteral(num) => {
-                num.walk(level);
-            }
+            Factor::Expression(expr) => expr.walk(level),
+            Factor::Var(var) => var.walk(level),
+            Factor::CallExpression(call) => call.walk(level),
+            Factor::NumberLiteral(num) => num.walk(level),
         }
     }
 }
@@ -808,12 +822,17 @@ pub struct CallExpression {
 }
 
 impl Walk for CallExpression {
-    fn walk(&self, level: usize) {
-        println!("{}CallExpression", " ".repeat(level * 2));
-        self.id.walk(level + 1);
-        println!("{}Arguments", " ".repeat((level + 1) * 2));
-        for arg in self.arguments.iter() {
-            arg.walk(level + 2);
-        }
+    fn walk(&self, level: usize) -> String {
+        let mut ast = format!("{}CallExpression\n", " ".repeat(level * 2));
+        let mut children = vec![
+            self.id.walk(level + 1),
+            format!("{}Arguments", " ".repeat((level + 1) * 2)),
+            self.arguments
+                .iter()
+                .map(|arg| arg.walk(level + 2))
+                .collect::<Vec<String>>()
+                .join("\n"),
+        ];
+        ast + &children.join("\n")
     }
 }
