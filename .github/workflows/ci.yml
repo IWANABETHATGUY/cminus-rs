@@ -25,5 +25,5 @@ jobs:
           BRANCH: gh-pages
           FOLDER: wasm/www/dist
           REPOSITORY_NAME: IWANABETHATGUY/tinylang-rs
-          TARGET_FOLDER: .
+          TARGET_FOLDER: site
           CLEAN: true 
