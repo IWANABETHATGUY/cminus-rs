@@ -13,8 +13,7 @@ jobs:
           persist-credentials: false
 
       - name: Install and Build # 下载依赖 打包项目
-      - uses: actions/checkout@v2
-      - run: |
+        run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cd ./wasm
           wasm-pack build
