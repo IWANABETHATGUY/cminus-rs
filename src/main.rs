@@ -13,7 +13,7 @@ fn main() -> Result<(), ParseError> {
     let list = lex.lex();
     let mut parser = Parser::new(list);
     let res = parser.parse_program()?;
-
+    println!("{:?}", Vec::<String>::new().join("\n"));
     println!("{}", res.walk(0));
     Ok(())
 }

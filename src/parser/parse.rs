@@ -575,13 +575,18 @@ impl Walk for Params {
         match self {
             Params::Void => format!("{}Void", " ".repeat(2 * level)),
             Params::ParamsList { params } => {
-                let mut ast = format!("{}ParameterList\n", " ".repeat(2 * level));
-                ast += &params
-                    .iter()
-                    .map(|param| param.walk(level + 1))
-                    .collect::<Vec<String>>()
-                    .join("\n");
-                ast
+                let ast = format!("{}ParameterList", " ".repeat(2 * level));
+                if !params.is_empty() {
+                    ast + "\n"
+                        + &params
+                            .iter()
+                            .map(|param| param.walk(level + 1))
+                            .filter(|param| !param.is_empty())
+                            .collect::<Vec<String>>()
+                            .join("\n")
+                } else {
+                    ast
+                }
             }
         }
     }
@@ -734,9 +739,8 @@ impl Walk for Expression {
     fn walk(&self, level: usize) -> String {
         match self {
             Expression::Assignment(assignment) => {
-                let ast = format!("{}Assignment", " ".repeat(2 * level));
-                assignment.walk(level);
-                ast
+                let ast = format!("{}Assignment\n", " ".repeat(2 * level));
+                ast + &assignment.walk(level)
             }
             Expression::BinaryExpression(binary_expr) => {
                 let ast = format!("{}BinaryExpression\n", " ".repeat(2 * level));
@@ -759,7 +763,7 @@ pub struct AssignmentExpression {
 
 impl Walk for AssignmentExpression {
     fn walk(&self, level: usize) -> String {
-        self.lhs.walk(level + 1) + &self.rhs.walk(level + 1)
+        format!("{}\n{}", self.lhs.walk(level + 1), self.rhs.walk(level + 1))
     }
 }
 
