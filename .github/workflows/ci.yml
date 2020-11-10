@@ -14,7 +14,10 @@ jobs:
 
       - name: Install and Build # 下载依赖 打包项目
         run: |
-          cd ./wasm/www
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          cd ./wasm
+          wasm-pack build
+          cd ./www
           npm install
           npm run build
 
