@@ -23,5 +23,5 @@ jobs:
         with:  # 自定义环境变量
           ACCESS_TOKEN: ${{ secrets.TINYLANG_RS }} 
           BRANCH: master
-          FOLDER: dist
+          FOLDER: wasm/www/dist
           TARGET_FOLDER: tinylang-rs # 打包的文件将放到静态服务器 github-actions-demo 目录下
