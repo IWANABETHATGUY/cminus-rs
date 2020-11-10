@@ -19,8 +19,6 @@ jobs:
           npm run build
 
       - name: Deploy # 将打包内容发布到 github page
-        run: |
-          git merge master
         uses: JamesIves/github-pages-deploy-action@3.5.9
         with:  # 自定义环境变量
           ACCESS_TOKEN: ${{ secrets.TINYLANG_RS }} 
@@ -28,3 +26,4 @@ jobs:
           FOLDER: wasm/www/dist
           REPOSITORY_NAME: IWANABETHATGUY/tinylang-rs
           TARGET_FOLDER: .
+          CLEAN: true 
