@@ -1,6 +1,6 @@
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TokenType {
-    ENDFILE,
+    // ENDFILE,
     ERROR,
     /* reserved words */
     IF,
@@ -12,7 +12,7 @@ pub enum TokenType {
     /* multicharacter tokens */
     ID,
     NUM,
-    KEYWORD,
+    // KEYWORD,
     /* special symbols */
     PLUS,
     MINUS,

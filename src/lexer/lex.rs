@@ -62,7 +62,7 @@ impl Lexer {
             return None;
         }
         let mut result = "".to_string();
-        let mut save = false;
+        let mut save;
        
         let mut token: Option<Token> = None;
         let mut state = State::START;
@@ -175,7 +175,7 @@ impl Lexer {
                         cur_token_type = TokenType::TIMES;
                     }
                 },
-                State::INMULTPLY => {} // do nothing
+                // State::INMULTPLY => {} // do nothing
                 State::INNUM => {
                     if !util::is_digit(cur_char) {
                         self.unget_next_char();
@@ -232,7 +232,7 @@ impl Lexer {
                 State::INNOTEQUAL => {
                     state = State::DONE;
                     if cur_char == '=' {
-                        cur_token_type = TokenType::EQ;
+                        cur_token_type = TokenType::NE;
                     } else {
                         self.unget_next_char();
                         save = false;

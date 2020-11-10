@@ -20,7 +20,7 @@ fn lex_test_helper(
 mod test_lex {
     use crate::lex_test_helper;
     use std::fs::read_to_string;
-    use std::{fs, path};
+    use std::path;
     use tinylang_rs::lexer::lex::Lexer;
     use tinylang_rs::lexer::token::{Position, Token, TokenType};
     #[test]

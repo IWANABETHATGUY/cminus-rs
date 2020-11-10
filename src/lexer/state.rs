@@ -2,7 +2,7 @@
 pub enum State {
     START,
     INDIVIDE,
-    INMULTPLY,
+    // INMULTPLY,
     INNUM,
     INID,
     DONE,
