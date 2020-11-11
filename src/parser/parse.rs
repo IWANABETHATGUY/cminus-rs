@@ -845,9 +845,10 @@ impl Walk for CallExpression {
             self.arguments
                 .iter()
                 .map(|arg| arg.walk(level + 2))
+                .filter(|arg| !arg.is_empty())
                 .collect::<Vec<String>>()
                 .join("\n"),
         ];
-        ast + &children.join("\n")
+        ast + &children.into_iter().filter(|item|!item.is_empty()).collect::<Vec<String>>().join("\n")
     }
 }
