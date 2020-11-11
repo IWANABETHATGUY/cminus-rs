@@ -16,4 +16,4 @@ void main(void) {
     y = input();
     output(gcd(x,y)); 
 }
-/* u-u/v*v == u mod v/*
+/* u-u/v*v == u mod v*/
