@@ -243,11 +243,12 @@ impl Parser {
         let test = self.parse_expression()?;
         self.match_and_consume(TokenType::RPAREN)?;
         let consequent = Box::new(self.parse_statement()?);
-        let mut alternative = None;
-        if self.match_token(TokenType::ELSE) {
+        let alternative = if self.match_token(TokenType::ELSE) {
             self.consume(1);
-            alternative = Some(Box::new(self.parse_statement()?));
-        }
+            Some(Box::new(self.parse_statement()?))
+        } else {
+            None
+        };
         Ok(SelectionStatement {
             consequent,
             alternative,
@@ -260,6 +261,7 @@ impl Parser {
         if !self.match_token(TokenType::SEMI) {
             expression = Some(self.parse_expression()?);
         }
+        self.match_and_consume(TokenType::SEMI)?;
         Ok(ReturnStatement { expression })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
@@ -620,22 +622,28 @@ pub struct CompoundStatement {
 impl Walk for CompoundStatement {
     fn walk(&self, level: usize) -> String {
         let mut ast = format!("{}CompoundStatement", " ".repeat(2 * level));
-        ast = ast
-            + &self
-                .local_declaration
-                .iter()
-                .map(|decl| decl.walk(level + 1))
-                .filter(|item| !item.is_empty())
-                .collect::<Vec<String>>()
-                .join("\n")
-            + "\n"
-            + &self
-                .statement_list
-                .iter()
-                .map(|stmt| stmt.walk(level + 1))
-                .filter(|item| !item.is_empty())
-                .collect::<Vec<String>>()
-                .join("\n");
+        if !self.local_declaration.is_empty() {
+            ast = ast
+                + "\n"
+                + &self
+                    .local_declaration
+                    .iter()
+                    .map(|decl| decl.walk(level + 1))
+                    .filter(|item| !item.is_empty())
+                    .collect::<Vec<String>>()
+                    .join("\n");
+        }
+        if !self.statement_list.is_empty() {
+            ast = ast
+                + "\n"
+                + &self
+                    .statement_list
+                    .iter()
+                    .map(|stmt| stmt.walk(level + 1))
+                    .filter(|item| !item.is_empty())
+                    .collect::<Vec<String>>()
+                    .join("\n");
+        }
         ast
     }
 }
