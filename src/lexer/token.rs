@@ -43,6 +43,7 @@ pub struct Position {
 }
 
 impl Position {
+    /// zero based line and column
     pub fn new(line: usize, column: usize) -> Self {
         Self { line, column }
     }
