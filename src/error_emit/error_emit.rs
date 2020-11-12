@@ -30,7 +30,12 @@ impl<'a> ErrorReporter<'a> {
         id
     }
 
-    pub fn add_diagnostic(&mut self, file_name: &str, range: impl Into<Range<usize>>, message: String) {
+    pub fn add_diagnostic(
+        &mut self,
+        file_name: &str,
+        range: impl Into<Range<usize>>,
+        message: String,
+    ) {
         if let Some(file_id) = self.file_name_id_map.get(file_name) {
             self.diagnostic
                 .labels
@@ -38,6 +43,11 @@ impl<'a> ErrorReporter<'a> {
         }
     }
 
+    pub fn pop_diagnostic(&mut self, file_name: &str) {
+        if let Some(file_id) = self.file_name_id_map.get(file_name) {
+            self.diagnostic.labels.pop();
+        }
+    }
     pub fn emit_std(&mut self) -> Result<(), std::io::Error> {
         let writer = StandardStream::stderr(ColorChoice::Always);
         let config = codespan_reporting::term::Config::default();
@@ -45,8 +55,12 @@ impl<'a> ErrorReporter<'a> {
         Ok(())
     }
 
-    pub fn emit_string() -> String {
+    pub fn emit_string(&self) -> String {
         let mut writer = Buffer::no_color();
+        let config = codespan_reporting::term::Config::default();
+
+        term::emit(&mut writer, &config, &self.files, &self.diagnostic);
+        // println!("{}", std::str::from_utf8(writer.as_slice()).unwrap());
         format!("{}", std::str::from_utf8(writer.as_slice()).unwrap())
     }
 }
