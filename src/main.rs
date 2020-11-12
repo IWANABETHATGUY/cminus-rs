@@ -7,10 +7,10 @@ use std::fs::read_to_string;
 use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/lexer2.test.txt");
-    let a = read_to_string(path)?;
-    let mut lex = Lexer::new(&a);
+    let source_code = read_to_string(path)?;
+    let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
-    let mut parser = Parser::new(list);
+    let mut parser = Parser::new(list, &source_code);
     let res = match parser.parse_program() {
         Ok(prog) => prog,
         Err(_) => {

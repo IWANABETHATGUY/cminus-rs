@@ -1,28 +1,39 @@
 use crate::{
+    error_emit::ErrorReporter,
     lexer::token::{Token, TokenType},
     parser::error::ParseError,
-   parser::walk::*,
+    parser::walk::*,
 };
 
 use std::fmt::Debug;
 
-pub struct Parser {
+pub struct Parser<'a> {
     token_list: Vec<Token>,
     cursor: usize,
+    source_file: &'a str,
+    error_reporter: ErrorReporter<'a>,
 }
 
-impl Parser {
-    pub fn new(token_list: Vec<Token>) -> Parser {
+impl<'a> Parser<'a> {
+    pub fn new(token_list: Vec<Token>, source_file: &'a str) -> Parser<'a> {
         let token_list = token_list
             .into_iter()
             .filter(|token| token.token_type != TokenType::COMMENT)
             .collect();
+        let mut error_reporter = ErrorReporter::new();
+        error_reporter.add_file("main.cm", source_file.to_string());
         Self {
             token_list,
             cursor: 0,
+            source_file,
+            error_reporter,
         }
     }
-    fn next_token(&mut self) -> Option<&Token> {
+
+    fn get_source_file_end_range(&self) -> impl Into<std::ops::Range<usize>> {
+        self.source_file.len() - 1..self.source_file.len()
+    }
+    fn next_token(&self) -> Option<&Token> {
         self.token_list.get(self.cursor)
     }
     fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -75,23 +86,35 @@ impl Parser {
     fn consume(&mut self, step: usize) {
         self.cursor += step;
     }
-    fn match_and_consume(&mut self, token_type: TokenType) -> Result<Token, ParseError> {
+    fn match_and_consume(&mut self, token_type: TokenType) -> Result<Token, ()> {
         let token = self.next_token();
         if token.is_none() {
-            return Err(ParseError::from(format!("expected {:?}", token_type)));
+            let range = self.get_source_file_end_range();
+            self.error_reporter.add_diagnostic(
+                "main.cm",
+                range,
+                format!("expected {:?}", token_type),
+            );
+            return Err(());
         }
         let token = token.unwrap().clone();
         if token.token_type == token_type {
             self.consume(1);
-            return Ok(token);
+            return Ok(token.clone());
+        } else {
+            self.error_reporter.add_diagnostic(
+                "main.cm",
+                token.range(),
+                format!("expected {:?}", token_type),
+            );
+            return Err(());
         }
-
-        return Err(ParseError::from(format!("expected {:?}", token_type)));
+        // return Err(ParseError::from(format!("expected {:?}", token_type)));
     }
     fn backtrack(&mut self, step: usize) {
         self.cursor -= step;
     }
-    pub fn parse_program(&mut self) -> Result<Program, ParseError> {
+    pub fn parse_program(&mut self) -> Result<Program, ()> {
         let mut declarations = vec![];
         while self.cursor < self.token_list.len() {
             let declaration = self.parse_declaration()?;
@@ -99,7 +122,7 @@ impl Parser {
         }
         Ok(Program { declarations })
     }
-    fn parse_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_token(TokenType::INT) || self.match_token(TokenType::VOID) {
             self.consume(1);
         }
@@ -115,7 +138,7 @@ impl Parser {
         }
     }
 
-    fn parse_variable_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_variable_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
         let identifier = Identifier {
@@ -125,9 +148,12 @@ impl Parser {
         if self.match_token(TokenType::LBRACK) {
             self.match_and_consume(TokenType::LBRACK)?;
             let num_token = self.match_and_consume(TokenType::NUM)?;
-            num = Some(NumberLiteral {
-                value: num_token.content.parse::<i32>()?,
-            });
+            let value = if let Ok(value) = num_token.content.parse::<i32>() {
+                value
+            } else {
+                return Err(());
+            };
+            num = Some(NumberLiteral { value });
             self.match_and_consume(TokenType::RBRACK)?;
         }
         self.match_and_consume(TokenType::SEMI)?;
@@ -138,7 +164,7 @@ impl Parser {
         }))
     }
 
-    fn parse_function_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_function_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
         let mut params: Params = Params::Void;
@@ -179,7 +205,7 @@ impl Parser {
         }))
     }
 
-    fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ParseError> {
+    fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ()> {
         self.match_and_consume(TokenType::LBRACE)?;
         let mut local_declaration = vec![];
         let mut statement_list = vec![];
@@ -187,7 +213,8 @@ impl Parser {
             match self.parse_variable_declaration() {
                 Ok(decl) => match decl {
                     Declaration::FunctionDeclaration(_) => {
-                        return Err(ParseError::from("Unexpected function declaration"));
+                        return Err(());
+                        // return Err(ParseError::from("Unexpected function declaration"));
                     }
                     Declaration::VarDeclaration(var_decl) => {
                         local_declaration.push(var_decl);
@@ -207,7 +234,7 @@ impl Parser {
             statement_list,
         })
     }
-    fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+    fn parse_statement(&mut self) -> Result<Statement, ()> {
         match self.next_token() {
             Some(token) => match token.token_type {
                 TokenType::LBRACE => Ok(Statement::CompoundStatement(
@@ -223,11 +250,12 @@ impl Parser {
                 _ => Ok(self.parse_expression_statement()?),
             },
             None => {
-                return Err(ParseError::from("expected ``"));
+                // return Err(ParseError::from("expected ``"));
+                return Err(());
             }
         }
     }
-    fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ParseError> {
+    fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
         self.match_and_consume(TokenType::WHILE)?;
         let expression = self.parse_expression()?;
         let body = Some(Box::new(self.parse_statement()?));
@@ -236,7 +264,7 @@ impl Parser {
             body,
         })
     }
-    fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ParseError> {
+    fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
         self.match_and_consume(TokenType::IF)?;
         self.match_and_consume(TokenType::LPAREN)?;
         let test = self.parse_expression()?;
@@ -254,7 +282,7 @@ impl Parser {
             test,
         })
     }
-    fn parse_return_statement(&mut self) -> Result<ReturnStatement, ParseError> {
+    fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
         self.match_and_consume(TokenType::RETURN)?;
         let mut expression = None;
         if !self.match_token(TokenType::SEMI) {
@@ -263,7 +291,7 @@ impl Parser {
         self.match_and_consume(TokenType::SEMI)?;
         Ok(ReturnStatement { expression })
     }
-    fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
+    fn parse_expression_statement(&mut self) -> Result<Statement, ()> {
         let mut expression = None;
         if !self.match_token(TokenType::SEMI) {
             expression = Some(self.parse_expression()?);
@@ -274,7 +302,7 @@ impl Parser {
         }))
     }
 
-    fn parse_var(&mut self) -> Result<Var, ParseError> {
+    fn parse_var(&mut self) -> Result<Var, ()> {
         let id = self.match_and_consume(TokenType::ID)?;
         let mut expression = None;
         if self.match_token(TokenType::LBRACK) {
@@ -285,7 +313,7 @@ impl Parser {
             id: Identifier { value: id.content },
         })
     }
-    fn parse_assignment_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_assignment_expression(&mut self) -> Result<Expression, ()> {
         let var = self.parse_var()?;
         self.match_and_consume(TokenType::ASSIGN)?;
         let expression = self.parse_expression()?;
@@ -294,7 +322,7 @@ impl Parser {
             rhs: Box::new(expression),
         }))
     }
-    fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_expression(&mut self) -> Result<Expression, ()> {
         let cursor = self.cursor;
         match self.parse_assignment_expression() {
             Ok(expr) => {
@@ -307,7 +335,7 @@ impl Parser {
         self.parse_simple_expression()
     }
 
-    fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_simple_expression(&mut self) -> Result<Expression, ()> {
         let left_expr = self.parse_additive_expression()?;
         if let Some(op) = self.match_rel_op() {
             self.consume(1);
@@ -321,7 +349,7 @@ impl Parser {
         Ok(left_expr)
     }
 
-    fn parse_additive_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_additive_expression(&mut self) -> Result<Expression, ()> {
         let left_term = self.parse_term()?;
         if let Some(operation) = self.match_add_op() {
             self.consume(1);
@@ -335,7 +363,7 @@ impl Parser {
         Ok(left_term)
     }
 
-    fn parse_term(&mut self) -> Result<Expression, ParseError> {
+    fn parse_term(&mut self) -> Result<Expression, ()> {
         let left_factor = self.parse_factor()?;
         if let Some(operation) = self.match_mul_op() {
             self.consume(1);
@@ -349,14 +377,19 @@ impl Parser {
         Ok(left_factor)
     }
 
-    fn parse_factor(&mut self) -> Result<Expression, ParseError> {
+    fn parse_factor(&mut self) -> Result<Expression, ()> {
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
             match token.token_type {
                 TokenType::NUM => {
                     self.consume(1);
+                    let value = if let Ok(value) = content.parse::<i32>() {
+                        value
+                    } else {
+                        return Err(());
+                    };
                     return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
-                        value: content.parse::<i32>()?,
+                        value,
                     })));
                 }
                 TokenType::LPAREN => {
@@ -405,13 +438,15 @@ impl Parser {
                         })));
                     }
                 }
-                _ => return Err(ParseError::from("expected `Identifier`, `Num`, `LPAREN`")),
+                _ => return Err(()),
+                // _ => return Err(ParseError::from("expected `Identifier`, `Num`, `LPAREN`")),
             }
         }
 
-        return Err(ParseError::from("expected Token found None"));
+        // return Err(ParseError::from("expected Token found None"));
+        return Err(());
     }
-    fn parse_args(&mut self) -> Result<Vec<Expression>, ParseError> {
+    fn parse_args(&mut self) -> Result<Vec<Expression>, ()> {
         let mut args = vec![];
         if !self.match_token(TokenType::RPAREN) {
             args.push(self.parse_expression()?);
@@ -423,7 +458,7 @@ impl Parser {
         Ok(args)
     }
 
-    fn parse_param(&mut self) -> Result<Parameter, ParseError> {
+    fn parse_param(&mut self) -> Result<Parameter, ()> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::ID)?;
         let identifier = Identifier {
@@ -441,7 +476,7 @@ impl Parser {
             is_array,
         })
     }
-    fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ParseError> {
+    fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
         if let Some(token) = self.next_token() {
             match token.token_type {
                 TokenType::INT => {
@@ -456,10 +491,11 @@ impl Parser {
                         kind: TypeSpecifierKind::Void,
                     });
                 }
-                _ => return Err(ParseError::from("expected `int` or `void`")),
+                _ => return Err(()),
+                // _ => return Err(ParseError::from("expected `int` or `void`")),
             }
         }
-        return Err(ParseError::from("expected `int` or `void`"));
+        return Err(());
+        // return Err(ParseError::from("expected `int` or `void`"));
     }
 }
-
