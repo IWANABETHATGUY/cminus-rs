@@ -1,29 +1,39 @@
 use crate::{
+    error_emit::ErrorReporter,
     lexer::token::{Token, TokenType},
     parser::error::ParseError,
+    parser::walk::*,
 };
-use std::fmt::Debug;
-pub trait Walk {
-    fn walk(&self, level: usize) -> String;
-}
 
-pub struct Parser {
+use std::fmt::Debug;
+
+pub struct Parser<'a> {
     token_list: Vec<Token>,
     cursor: usize,
+    source_file: &'a str,
+    pub error_reporter: ErrorReporter<'a>,
 }
 
-impl Parser {
-    pub fn new(token_list: Vec<Token>) -> Parser {
+impl<'a> Parser<'a> {
+    pub fn new(token_list: Vec<Token>, source_file: &'a str) -> Parser<'a> {
         let token_list = token_list
             .into_iter()
             .filter(|token| token.token_type != TokenType::COMMENT)
             .collect();
+        let mut error_reporter = ErrorReporter::new();
+        error_reporter.add_file("main.cm", source_file.to_string());
         Self {
             token_list,
             cursor: 0,
+            source_file,
+            error_reporter,
         }
     }
-    fn next_token(&mut self) -> Option<&Token> {
+
+    fn get_source_file_end_range(&self) -> impl Into<std::ops::Range<usize>> {
+        self.source_file.len() - 1..self.source_file.len()
+    }
+    fn next_token(&self) -> Option<&Token> {
         self.token_list.get(self.cursor)
     }
     fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -76,23 +86,42 @@ impl Parser {
     fn consume(&mut self, step: usize) {
         self.cursor += step;
     }
-    fn match_and_consume(&mut self, token_type: TokenType) -> Result<Token, ParseError> {
+    fn match_and_consume(&mut self, token_type: TokenType, need_report: bool) -> Result<Token, ()> {
         let token = self.next_token();
         if token.is_none() {
-            return Err(ParseError::from(format!("expected {:?}", token_type)));
+            let range = self.get_source_file_end_range();
+            if need_report {
+                self.error_reporter.add_diagnostic(
+                    "main.cm",
+                    range,
+                    format!("expected {:?}, found none", token_type),
+                );
+            }
+            return Err(());
         }
         let token = token.unwrap().clone();
         if token.token_type == token_type {
             self.consume(1);
-            return Ok(token);
+            return Ok(token.clone());
+        } else {
+            if need_report {
+                self.error_reporter.add_diagnostic(
+                    "main.cm",
+                    token.range(),
+                    format!(
+                        "expected {:?}, found {:?}",
+                        token_type, token.token_type
+                    ),
+                );
+            }
+            return Err(());
         }
-
-        return Err(ParseError::from(format!("expected {:?}", token_type)));
+        // return Err(ParseError::from(format!("expected {:?}", token_type)));
     }
     fn backtrack(&mut self, step: usize) {
-        self.cursor -= step;
+        self.cursor = self.cursor.wrapping_sub(step);
     }
-    pub fn parse_program(&mut self) -> Result<Program, ParseError> {
+    pub fn parse_program(&mut self) -> Result<Program, ()> {
         let mut declarations = vec![];
         while self.cursor < self.token_list.len() {
             let declaration = self.parse_declaration()?;
@@ -100,7 +129,7 @@ impl Parser {
         }
         Ok(Program { declarations })
     }
-    fn parse_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_token(TokenType::INT) || self.match_token(TokenType::VOID) {
             self.consume(1);
         }
@@ -116,22 +145,30 @@ impl Parser {
         }
     }
 
-    fn parse_variable_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_variable_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID)?;
+        let id_token = self.match_and_consume(TokenType::ID, true)?;
         let identifier = Identifier {
             value: id_token.content,
         };
         let mut num = None;
         if self.match_token(TokenType::LBRACK) {
-            self.match_and_consume(TokenType::LBRACK)?;
-            let num_token = self.match_and_consume(TokenType::NUM)?;
-            num = Some(NumberLiteral {
-                value: num_token.content.parse::<i32>()?,
-            });
-            self.match_and_consume(TokenType::RBRACK)?;
+            self.consume(1);
+            let num_token = self.match_and_consume(TokenType::NUM, true)?;
+            let value = if let Ok(value) = num_token.content.parse::<i32>() {
+                value
+            } else {
+                self.error_reporter.add_diagnostic(
+                    "main.cm",
+                    num_token.range(),
+                    "can't parse token to integer".into(),
+                );
+                return Err(());
+            };
+            num = Some(NumberLiteral { value });
+            self.match_and_consume(TokenType::RBRACK, true)?;
         }
-        self.match_and_consume(TokenType::SEMI)?;
+        self.match_and_consume(TokenType::SEMI, true)?;
         Ok(Declaration::VarDeclaration(VarDeclaration {
             type_specifier,
             id: identifier,
@@ -139,28 +176,28 @@ impl Parser {
         }))
     }
 
-    fn parse_function_declaration(&mut self) -> Result<Declaration, ParseError> {
+    fn parse_function_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID)?;
+        let id_token = self.match_and_consume(TokenType::ID, true)?;
         let mut params: Params = Params::Void;
         let identifier = Identifier {
             value: id_token.content,
         };
-        self.match_and_consume(TokenType::LPAREN)?;
+        self.match_and_consume(TokenType::LPAREN, true)?;
         match self.next_token() {
             Some(token) => match token.token_type {
                 TokenType::VOID => {
                     self.consume(1);
                     params = Params::Void;
                 }
-                TokenType::LPAREN => {}
+                // TokenType::LPAREN => {}
                 _ => {
                     let mut params_list = vec![];
                     if !self.match_token(TokenType::RPAREN) {
                         params_list.push(self.parse_param()?);
                     }
                     while !self.match_token(TokenType::RPAREN) {
-                        self.match_and_consume(TokenType::COMMA)?;
+                        self.match_and_consume(TokenType::COMMA, true)?;
                         params_list.push(self.parse_param()?);
                     }
                     params = Params::ParamsList {
@@ -170,7 +207,7 @@ impl Parser {
             },
             None => {}
         }
-        self.match_and_consume(TokenType::RPAREN)?;
+        self.match_and_consume(TokenType::RPAREN, true)?;
         let body = self.parse_compound_statement()?;
         Ok(Declaration::FunctionDeclaration(FunctionDeclaration {
             type_specifier,
@@ -180,35 +217,40 @@ impl Parser {
         }))
     }
 
-    fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ParseError> {
-        self.match_and_consume(TokenType::LBRACE)?;
+    fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ()> {
+        self.match_and_consume(TokenType::LBRACE, true)?;
         let mut local_declaration = vec![];
         let mut statement_list = vec![];
         while self.match_type_specifier() {
             match self.parse_variable_declaration() {
                 Ok(decl) => match decl {
                     Declaration::FunctionDeclaration(_) => {
-                        return Err(ParseError::from("Unexpected function declaration"));
+                        self.error_reporter.add_diagnostic(
+                            "main.cm",
+                            self.token_list[self.cursor].range(),
+                            "Unexpected function declaration".into(),
+                        );
+                        return Err(());
                     }
                     Declaration::VarDeclaration(var_decl) => {
                         local_declaration.push(var_decl);
                     }
                 },
-                Err(err) => {
-                    return Err(err);
+                Err(_) => {
+                    return Err(());
                 }
             }
         }
         while !self.match_token(TokenType::RBRACE) {
             statement_list.push(self.parse_statement()?);
         }
-        self.match_and_consume(TokenType::RBRACE)?;
+        self.match_and_consume(TokenType::RBRACE, true)?;
         Ok(CompoundStatement {
             local_declaration,
             statement_list,
         })
     }
-    fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+    fn parse_statement(&mut self) -> Result<Statement, ()> {
         match self.next_token() {
             Some(token) => match token.token_type {
                 TokenType::LBRACE => Ok(Statement::CompoundStatement(
@@ -224,12 +266,13 @@ impl Parser {
                 _ => Ok(self.parse_expression_statement()?),
             },
             None => {
-                return Err(ParseError::from("expected ``"));
+                // return Err(ParseError::from("expected ``"));
+                return Err(());
             }
         }
     }
-    fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ParseError> {
-        self.match_and_consume(TokenType::WHILE)?;
+    fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
+        self.match_and_consume(TokenType::WHILE, true)?;
         let expression = self.parse_expression()?;
         let body = Some(Box::new(self.parse_statement()?));
         Ok(IterationStatement {
@@ -237,11 +280,11 @@ impl Parser {
             body,
         })
     }
-    fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ParseError> {
-        self.match_and_consume(TokenType::IF)?;
-        self.match_and_consume(TokenType::LPAREN)?;
+    fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
+        self.match_and_consume(TokenType::IF, true)?;
+        self.match_and_consume(TokenType::LPAREN, true)?;
         let test = self.parse_expression()?;
-        self.match_and_consume(TokenType::RPAREN)?;
+        self.match_and_consume(TokenType::RPAREN, true)?;
         let consequent = Box::new(self.parse_statement()?);
         let alternative = if self.match_token(TokenType::ELSE) {
             self.consume(1);
@@ -255,28 +298,28 @@ impl Parser {
             test,
         })
     }
-    fn parse_return_statement(&mut self) -> Result<ReturnStatement, ParseError> {
-        self.match_and_consume(TokenType::RETURN)?;
+    fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
+        self.match_and_consume(TokenType::RETURN, true)?;
         let mut expression = None;
         if !self.match_token(TokenType::SEMI) {
             expression = Some(self.parse_expression()?);
         }
-        self.match_and_consume(TokenType::SEMI)?;
+        self.match_and_consume(TokenType::SEMI, true)?;
         Ok(ReturnStatement { expression })
     }
-    fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
+    fn parse_expression_statement(&mut self) -> Result<Statement, ()> {
         let mut expression = None;
         if !self.match_token(TokenType::SEMI) {
             expression = Some(self.parse_expression()?);
         }
-        self.match_and_consume(TokenType::SEMI)?;
+        self.match_and_consume(TokenType::SEMI, true)?;
         Ok(Statement::ExpressionStatement(ExpressionStatement {
             expression,
         }))
     }
 
-    fn parse_var(&mut self) -> Result<Var, ParseError> {
-        let id = self.match_and_consume(TokenType::ID)?;
+    fn parse_var(&mut self) -> Result<Var, ()> {
+        let id = self.match_and_consume(TokenType::ID, true)?;
         let mut expression = None;
         if self.match_token(TokenType::LBRACK) {
             expression = Some(Box::new(self.parse_expression()?));
@@ -286,29 +329,31 @@ impl Parser {
             id: Identifier { value: id.content },
         })
     }
-    fn parse_assignment_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_assignment_expression(&mut self) -> Result<Expression, ()> {
         let var = self.parse_var()?;
-        self.match_and_consume(TokenType::ASSIGN)?;
+        self.match_and_consume(TokenType::ASSIGN, true)?;
         let expression = self.parse_expression()?;
         Ok(Expression::Assignment(AssignmentExpression {
             lhs: var,
             rhs: Box::new(expression),
         }))
     }
-    fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_expression(&mut self) -> Result<Expression, ()> {
         let cursor = self.cursor;
-        match self.parse_assignment_expression() {
-            Ok(expr) => {
-                return Ok(expr);
-            }
-            Err(_) => {
-                self.cursor = cursor;
-            }
+        if let Ok(expr) = self.parse_assignment_expression() {
+            return Ok(expr);
         }
-        self.parse_simple_expression()
+        self.cursor = cursor;
+        if let Ok(expr) = self.parse_simple_expression() {
+            // self.error_reporter.pop_diagnostic("main.cm");
+            Ok(expr)
+        } else {
+            // println!("parse_expression: {}", self.error_reporter.emit_string());
+            Err(())
+        }
     }
 
-    fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_simple_expression(&mut self) -> Result<Expression, ()> {
         let left_expr = self.parse_additive_expression()?;
         if let Some(op) = self.match_rel_op() {
             self.consume(1);
@@ -322,7 +367,7 @@ impl Parser {
         Ok(left_expr)
     }
 
-    fn parse_additive_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_additive_expression(&mut self) -> Result<Expression, ()> {
         let left_term = self.parse_term()?;
         if let Some(operation) = self.match_add_op() {
             self.consume(1);
@@ -336,7 +381,7 @@ impl Parser {
         Ok(left_term)
     }
 
-    fn parse_term(&mut self) -> Result<Expression, ParseError> {
+    fn parse_term(&mut self) -> Result<Expression, ()> {
         let left_factor = self.parse_factor()?;
         if let Some(operation) = self.match_mul_op() {
             self.consume(1);
@@ -350,20 +395,31 @@ impl Parser {
         Ok(left_factor)
     }
 
-    fn parse_factor(&mut self) -> Result<Expression, ParseError> {
+    fn parse_factor(&mut self) -> Result<Expression, ()> {
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
+            let range = token.range();
             match token.token_type {
                 TokenType::NUM => {
                     self.consume(1);
+                    let value = if let Ok(value) = content.parse::<i32>() {
+                        value
+                    } else {
+                        self.error_reporter.add_diagnostic(
+                            "main.cm",
+                            range,
+                            "can't parse token to integer".into(),
+                        );
+                        return Err(());
+                    };
                     return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
-                        value: content.parse::<i32>()?,
+                        value,
                     })));
                 }
                 TokenType::LPAREN => {
                     self.consume(1);
                     let expression = self.parse_expression()?;
-                    self.match_and_consume(TokenType::RPAREN)?;
+                    self.match_and_consume(TokenType::RPAREN, true)?;
                     return Ok(Expression::Factor(Factor::Expression(Box::new(expression))));
                 }
                 TokenType::ID => {
@@ -374,7 +430,7 @@ impl Parser {
                             TokenType::LPAREN => {
                                 self.consume(1);
                                 let arguments = self.parse_args()?;
-                                self.match_and_consume(TokenType::RPAREN)?;
+                                self.match_and_consume(TokenType::RPAREN, true)?;
                                 return Ok(Expression::Factor(Factor::CallExpression(
                                     CallExpression {
                                         arguments,
@@ -385,7 +441,7 @@ impl Parser {
                             TokenType::LBRACK => {
                                 self.consume(1);
                                 let local_expression = self.parse_expression()?;
-                                self.match_and_consume(TokenType::RBRACK)?;
+                                self.match_and_consume(TokenType::RBRACK, true)?;
                                 let var = Var {
                                     id: Identifier { value },
                                     expression: Some(Box::new(local_expression)),
@@ -406,34 +462,46 @@ impl Parser {
                         })));
                     }
                 }
-                _ => return Err(ParseError::from("expected `Identifier`, `Num`, `LPAREN`")),
+                _ => {
+                    self.error_reporter.add_diagnostic(
+                        "main.cm",
+                        token.range(),
+                        "expected `Identifier`, `Num`, `LPAREN`".into(),
+                    );
+                    return Err(());
+                }
             }
         }
 
-        return Err(ParseError::from("expected Token found None"));
+        self.error_reporter.add_diagnostic(
+            "main.cm",
+            self.get_source_file_end_range(),
+            "expected Token found None".into(),
+        );
+        return Err(());
     }
-    fn parse_args(&mut self) -> Result<Vec<Expression>, ParseError> {
+    fn parse_args(&mut self) -> Result<Vec<Expression>, ()> {
         let mut args = vec![];
         if !self.match_token(TokenType::RPAREN) {
             args.push(self.parse_expression()?);
         }
         while !self.match_token(TokenType::RPAREN) {
-            self.match_and_consume(TokenType::COMMA)?;
+            self.match_and_consume(TokenType::COMMA, true)?;
             args.push(self.parse_expression()?);
         }
         Ok(args)
     }
 
-    fn parse_param(&mut self) -> Result<Parameter, ParseError> {
+    fn parse_param(&mut self) -> Result<Parameter, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID)?;
+        let id_token = self.match_and_consume(TokenType::ID, true)?;
         let identifier = Identifier {
             value: id_token.content,
         };
         let mut is_array = false;
         if self.match_token(TokenType::LBRACK) {
-            self.match_and_consume(TokenType::LBRACK)?;
-            self.match_and_consume(TokenType::RBRACK)?;
+            self.match_and_consume(TokenType::LBRACK, true)?;
+            self.match_and_consume(TokenType::RBRACK, true)?;
             is_array = true;
         }
         Ok(Parameter {
@@ -442,7 +510,7 @@ impl Parser {
             is_array,
         })
     }
-    fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ParseError> {
+    fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
         if let Some(token) = self.next_token() {
             match token.token_type {
                 TokenType::INT => {
@@ -457,398 +525,21 @@ impl Parser {
                         kind: TypeSpecifierKind::Void,
                     });
                 }
-                _ => return Err(ParseError::from("expected `int` or `void`")),
-            }
-        }
-        return Err(ParseError::from("expected `int` or `void`"));
-    }
-}
-
-#[derive(Debug)]
-pub struct Program {
-    declarations: Vec<Declaration>,
-}
-impl Walk for Program {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!("{}Program\n", " ".repeat(2 * level));
-        let mut children = vec![];
-        for decl in self.declarations.iter() {
-            children.push(decl.walk(level + 1))
-        }
-        ast + &children.join("\n")
-    }
-}
-// impl Debug for Program {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
-//     }
-
-// }
-#[derive(Debug)]
-pub struct FunctionDeclaration {
-    type_specifier: TypeSpecifier,
-    id: Identifier,
-    params: Params,
-    body: CompoundStatement,
-}
-impl Walk for FunctionDeclaration {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!("{}FunctionDeclaration\n", " ".repeat(2 * level));
-        ast += &vec![
-            self.type_specifier.walk(level + 1),
-            self.id.walk(level + 1),
-            self.params.walk(level + 1),
-            self.body.walk(level + 1),
-        ]
-        .join("\n");
-        ast
-    }
-}
-#[derive(Debug)]
-pub struct VarDeclaration {
-    type_specifier: TypeSpecifier,
-    id: Identifier,
-    num: Option<NumberLiteral>,
-}
-impl Walk for VarDeclaration {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!("{}VarDeclaration\n", " ".repeat(2 * level));
-        let mut children = vec![self.id.walk(level + 1), self.type_specifier.walk(level + 1)];
-        if let Some(ref num) = self.num {
-            children.push(num.walk(level + 1));
-        }
-        ast + &children.join("\n")
-    }
-}
-#[derive(Debug)]
-pub enum Declaration {
-    FunctionDeclaration(FunctionDeclaration),
-    VarDeclaration(VarDeclaration),
-}
-impl Walk for Declaration {
-    fn walk(&self, level: usize) -> String {
-        match &self {
-            Declaration::VarDeclaration(var_decl) => var_decl.walk(level),
-            Declaration::FunctionDeclaration(func_decl) => func_decl.walk(level),
-        }
-    }
-}
-#[derive(Debug)]
-pub struct Identifier {
-    value: String,
-}
-impl Walk for Identifier {
-    fn walk(&self, level: usize) -> String {
-        format!("{}Identifier({})", " ".repeat(2 * level), self.value)
-    }
-}
-#[derive(Debug)]
-pub struct NumberLiteral {
-    value: i32,
-}
-impl Walk for NumberLiteral {
-    fn walk(&self, level: usize) -> String {
-        format!("{}NumberLiteral({})", " ".repeat(2 * level), self.value)
-    }
-}
-#[derive(Debug)]
-pub struct TypeSpecifier {
-    kind: TypeSpecifierKind,
-}
-
-impl Walk for TypeSpecifier {
-    fn walk(&self, level: usize) -> String {
-        format!("{}TypeSpecifier({:?})", " ".repeat(2 * level), self.kind)
-    }
-}
-#[derive(Debug)]
-enum TypeSpecifierKind {
-    Int,
-    Void,
-}
-#[derive(Debug)]
-pub enum Params {
-    Void,
-    ParamsList { params: Vec<Parameter> },
-}
-
-impl Walk for Params {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Params::Void => format!("{}Void", " ".repeat(2 * level)),
-            Params::ParamsList { params } => {
-                let ast = format!("{}ParameterList", " ".repeat(2 * level));
-                if !params.is_empty() {
-                    ast + "\n"
-                        + &params
-                            .iter()
-                            .map(|param| param.walk(level + 1))
-                            .filter(|param| !param.is_empty())
-                            .collect::<Vec<String>>()
-                            .join("\n")
-                } else {
-                    ast
+                _ => {
+                    self.error_reporter.add_diagnostic(
+                        "main.cm",
+                        token.range(),
+                        format!("expected `int` or `void`, found {:?}", token.token_type)
+                    );
+                    return Err(());
                 }
             }
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct Parameter {
-    type_specifier: TypeSpecifier,
-    id: Identifier,
-    is_array: bool,
-}
-
-impl Walk for Parameter {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}Parameter({:?} {}{})",
-            " ".repeat(2 * level),
-            self.type_specifier.kind,
-            self.id.value,
-            if self.is_array { "[]" } else { "" }
-        )
-    }
-}
-
-#[derive(Debug)]
-pub struct CompoundStatement {
-    local_declaration: Vec<VarDeclaration>,
-    statement_list: Vec<Statement>,
-}
-
-impl Walk for CompoundStatement {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!("{}CompoundStatement", " ".repeat(2 * level));
-        if !self.local_declaration.is_empty() {
-            ast = ast
-                + "\n"
-                + &self
-                    .local_declaration
-                    .iter()
-                    .map(|decl| decl.walk(level + 1))
-                    .filter(|item| !item.is_empty())
-                    .collect::<Vec<String>>()
-                    .join("\n");
-        }
-        if !self.statement_list.is_empty() {
-            ast = ast
-                + "\n"
-                + &self
-                    .statement_list
-                    .iter()
-                    .map(|stmt| stmt.walk(level + 1))
-                    .filter(|item| !item.is_empty())
-                    .collect::<Vec<String>>()
-                    .join("\n");
-        }
-        ast
-    }
-}
-#[derive(Debug)]
-pub enum Statement {
-    CompoundStatement(CompoundStatement),
-    ExpressionStatement(ExpressionStatement),
-    SelectionStatement(SelectionStatement),
-    IterationStatement(IterationStatement),
-    ReturnStatement(ReturnStatement),
-}
-
-impl Walk for Statement {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Statement::CompoundStatement(stmt) => stmt.walk(level),
-            Statement::ExpressionStatement(stmt) => stmt.walk(level),
-            Statement::SelectionStatement(stmt) => stmt.walk(level),
-            Statement::IterationStatement(stmt) => stmt.walk(level),
-            Statement::ReturnStatement(stmt) => stmt.walk(level),
-        }
-    }
-}
-#[derive(Debug)]
-pub struct SelectionStatement {
-    test: Expression,
-    consequent: Box<Statement>,
-    alternative: Option<Box<Statement>>,
-}
-
-impl Walk for SelectionStatement {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!("{}SelectionStatement\n", " ".repeat(2 * level));
-        let mut children = vec![self.test.walk(level + 1), self.consequent.walk(level + 1)];
-        if let Some(ref consequent) = self.alternative {
-            children.push(consequent.walk(level + 1));
-        }
-        ast + &children
-            .into_iter()
-            .filter(|child| !child.is_empty())
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
-}
-#[derive(Debug)]
-pub struct IterationStatement {
-    test: Expression,
-    body: Option<Box<Statement>>,
-}
-
-impl Walk for IterationStatement {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!("{}IterationStatement\n", " ".repeat(2 * level));
-        let mut children = vec![self.test.walk(level + 1)];
-        if let Some(ref body) = self.body {
-            let body_ast_string = body.walk(level + 1);
-            if !body_ast_string.is_empty() {
-                children.push(body_ast_string);
-            }
-        }
-        ast + &children.join("\n")
-    }
-}
-#[derive(Debug)]
-pub struct ReturnStatement {
-    expression: Option<Expression>,
-}
-
-impl Walk for ReturnStatement {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!("{}ReturnStatement\n", " ".repeat(2 * level));
-        if let Some(ref expr) = self.expression {
-            ast += &expr.walk(level + 1);
-        }
-        ast
-    }
-}
-#[derive(Debug)]
-pub struct ExpressionStatement {
-    expression: Option<Expression>,
-}
-
-impl Walk for ExpressionStatement {
-    fn walk(&self, level: usize) -> String {
-        if let Some(ref expr) = self.expression {
-            expr.walk(level)
-        } else {
-            "".to_string()
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Expression {
-    Assignment(AssignmentExpression),
-    BinaryExpression(BinaryExpression),
-    Factor(Factor),
-}
-
-impl Walk for Expression {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Expression::Assignment(assignment) => {
-                let ast = format!("{}Assignment\n", " ".repeat(2 * level));
-                ast + &assignment.walk(level)
-            }
-            Expression::BinaryExpression(binary_expr) => {
-                let ast = format!("{}BinaryExpression\n", " ".repeat(2 * level));
-                let children = vec![
-                    binary_expr.left.walk(level + 1),
-                    binary_expr.operation.walk(level + 1),
-                    binary_expr.right.walk(level + 1),
-                ];
-                ast + &children.join("\n")
-            }
-            Expression::Factor(factor) => factor.walk(level),
-        }
-    }
-}
-#[derive(Debug)]
-pub struct AssignmentExpression {
-    lhs: Var,
-    rhs: Box<Expression>,
-}
-
-impl Walk for AssignmentExpression {
-    fn walk(&self, level: usize) -> String {
-        format!("{}\n{}", self.lhs.walk(level + 1), self.rhs.walk(level + 1))
-    }
-}
-
-#[derive(Debug)]
-pub struct Var {
-    id: Identifier,
-    expression: Option<Box<Expression>>,
-}
-
-impl Walk for Var {
-    fn walk(&self, level: usize) -> String {
-        self.id.walk(level)
-    }
-}
-
-#[derive(Debug)]
-pub struct BinaryExpression {
-    left: Box<Expression>,
-    right: Box<Expression>,
-    operation: Operation,
-}
-#[derive(Debug)]
-pub enum Operation {
-    GT,
-    LT,
-    GE,
-    LE,
-    EQ,
-    NE,
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
-}
-
-impl Walk for Operation {
-    fn walk(&self, level: usize) -> String {
-        format!("{}{:?}", " ".repeat(2 * level), self)
-    }
-}
-#[derive(Debug)]
-pub enum Factor {
-    Expression(Box<Expression>),
-    Var(Var),
-    CallExpression(CallExpression),
-    NumberLiteral(NumberLiteral),
-}
-
-impl Walk for Factor {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Factor::Expression(expr) => expr.walk(level),
-            Factor::Var(var) => var.walk(level),
-            Factor::CallExpression(call) => call.walk(level),
-            Factor::NumberLiteral(num) => num.walk(level),
-        }
-    }
-}
-#[derive(Debug)]
-pub struct CallExpression {
-    id: Identifier,
-    arguments: Vec<Expression>,
-}
-
-impl Walk for CallExpression {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!("{}CallExpression\n", " ".repeat(level * 2));
-        let children = vec![
-            self.id.walk(level + 1),
-            format!("{}Arguments", " ".repeat((level + 1) * 2)),
-            self.arguments
-                .iter()
-                .map(|arg| arg.walk(level + 2))
-                .filter(|arg| !arg.is_empty())
-                .collect::<Vec<String>>()
-                .join("\n"),
-        ];
-        ast + &children.into_iter().filter(|item|!item.is_empty()).collect::<Vec<String>>().join("\n")
+        self.error_reporter.add_diagnostic(
+            "main.cm",
+            self.get_source_file_end_range(),
+            "expected `int` or `void`".into(),
+        );
+        return Err(());
     }
 }

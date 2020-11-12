@@ -80,7 +80,9 @@ impl Token {
             end_index,
         }
     }
-
+    pub fn range(&self) -> impl Into<std::ops::Range<usize>> {
+        self.start_index..self.end_index
+    }
     // pub fn get_token_type(&self) -> TokenType {
     //     self.token_type
     // }
