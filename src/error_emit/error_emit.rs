@@ -44,7 +44,7 @@ impl<'a> ErrorReporter<'a> {
     }
 
     pub fn pop_diagnostic(&mut self, file_name: &str) {
-        if let Some(file_id) = self.file_name_id_map.get(file_name) {
+        if let Some(_) = self.file_name_id_map.get(file_name) {
             self.diagnostic.labels.pop();
         }
     }

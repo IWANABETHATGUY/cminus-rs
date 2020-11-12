@@ -2,7 +2,7 @@ mod utils;
 
 use tinylang_rs::{
     lexer::lex::Lexer,
-    parser::parse::{Parser, Walk},
+    parser::{parse::Parser, Walk},
 };
 use wasm_bindgen::prelude::*;
 
@@ -16,11 +16,13 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn parse(source_code: String) -> String {
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
-    let mut parser = Parser::new(list);
+    let mut parser = Parser::new(list, &source_code);
     let res = parser.parse_program();
     match res {
         Ok(program) => program.walk(0),
-        Err(err) => err.to_string(),
+        Err(_) => {
+            parser.error_reporter.emit_string()
+        },
     }
 }
 

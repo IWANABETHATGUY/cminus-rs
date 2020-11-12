@@ -94,7 +94,7 @@ impl<'a> Parser<'a> {
                 self.error_reporter.add_diagnostic(
                     "main.cm",
                     range,
-                    format!("match_and_consume, expected {:?}, found none", token_type),
+                    format!("expected {:?}, found none", token_type),
                 );
             }
             return Err(());
@@ -109,7 +109,7 @@ impl<'a> Parser<'a> {
                     "main.cm",
                     token.range(),
                     format!(
-                        "match_and_consume, expected {:?}, found {:?}",
+                        "expected {:?}, found {:?}",
                         token_type, token.token_type
                     ),
                 );
