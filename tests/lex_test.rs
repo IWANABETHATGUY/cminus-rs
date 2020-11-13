@@ -22,7 +22,7 @@ mod test_lex {
     use std::fs::read_to_string;
     use std::path;
     use tinylang_rs::lexer::lex::Lexer;
-    use tinylang_rs::lexer::token::{Position, Token, TokenType};
+    use tinylang_rs::lexer::token::{Position, TokenType};
     #[test]
     fn test_lex_meaningless() -> Result<(), std::io::Error> {
         let path = path::Path::new("tests/fixtures/lexer.test.txt");

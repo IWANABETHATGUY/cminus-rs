@@ -19,6 +19,7 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
+    // parser.error_reporter.emit_std()?;
     println!("{}", res.walk(0));
     Ok(())
 }

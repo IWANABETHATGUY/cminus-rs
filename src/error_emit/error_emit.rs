@@ -59,7 +59,7 @@ impl<'a> ErrorReporter<'a> {
         let mut writer = Buffer::no_color();
         let config = codespan_reporting::term::Config::default();
 
-        term::emit(&mut writer, &config, &self.files, &self.diagnostic);
+        term::emit(&mut writer, &config, &self.files, &self.diagnostic).unwrap();
         // println!("{}", std::str::from_utf8(writer.as_slice()).unwrap());
         format!("{}", std::str::from_utf8(writer.as_slice()).unwrap())
     }
