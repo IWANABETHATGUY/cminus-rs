@@ -369,7 +369,10 @@ impl<'a> Parser<'a> {
                 self.error_reporter.add_diagnostic(
                     "main.cm",
                     self.token_list[cursor].range(),
-                    format!("expected `(`, `identifier`, `number`, found {:?}", self.token_list[cursor].token_type),
+                    format!(
+                        "expected `(`, `identifier`, `number`, found {:?}",
+                        self.token_list[cursor].token_type
+                    ),
                 );
             } else {
                 self.error_reporter.add_diagnostic(
@@ -397,29 +400,34 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_additive_expression(&mut self) -> Result<Expression, ()> {
-        let left_term = self.parse_term()?;
-        if let Some(operation) = self.match_add_op() {
-            self.consume(1);
-            let right_term = self.parse_term()?;
-            return Ok(Expression::BinaryExpression(BinaryExpression {
-                left: Box::new(left_term),
-                right: Box::new(right_term),
-                operation,
-            }));
+        let mut left_term = self.parse_term()?;
+        // println!("{:?}", left_term);
+        if let Some(_) = self.match_add_op() {
+            while let Some(operation) = self.match_add_op() {
+                self.consume(1);
+                let right_term = self.parse_term()?;
+                left_term = Expression::BinaryExpression(BinaryExpression {
+                    left: Box::new(left_term),
+                    right: Box::new(right_term),
+                    operation,
+                });
+            }
         }
         Ok(left_term)
     }
 
     fn parse_term(&mut self) -> Result<Expression, ()> {
-        let left_factor = self.parse_factor()?;
-        if let Some(operation) = self.match_mul_op() {
-            self.consume(1);
-            let right_factor = self.parse_term()?;
-            return Ok(Expression::BinaryExpression(BinaryExpression {
-                left: Box::new(left_factor),
-                right: Box::new(right_factor),
-                operation,
-            }));
+        let mut left_factor = self.parse_factor()?;
+        if let Some(_) = self.match_mul_op() {
+            while let Some(operation) = self.match_mul_op() {
+                self.consume(1);
+                let right_factor = self.parse_factor()?;
+                left_factor = Expression::BinaryExpression(BinaryExpression {
+                    left: Box::new(left_factor),
+                    right: Box::new(right_factor),
+                    operation,
+                });
+            }
         }
         Ok(left_factor)
     }
