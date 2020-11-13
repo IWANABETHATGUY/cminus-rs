@@ -10,3 +10,6 @@ int fibonacci(int i) {
    return fibonacci(n - 1) +fibonacci(n - 2);
    
 }
+void main() {
+   
+}

@@ -1,11 +1,8 @@
 use crate::{
     error_emit::ErrorReporter,
     lexer::token::{Token, TokenType},
-    parser::error::ParseError,
     parser::walk::*,
 };
-
-use std::fmt::Debug;
 
 pub struct Parser<'a> {
     token_list: Vec<Token>,
@@ -108,10 +105,7 @@ impl<'a> Parser<'a> {
                 self.error_reporter.add_diagnostic(
                     "main.cm",
                     token.range(),
-                    format!(
-                        "expected {:?}, found {:?}",
-                        token_type, token.token_type
-                    ),
+                    format!("expected {:?}, found {:?}", token_type, token.token_type),
                 );
             }
             return Err(());
@@ -127,7 +121,28 @@ impl<'a> Parser<'a> {
             let declaration = self.parse_declaration()?;
             declarations.push(declaration);
         }
+        if let Err(()) = Self::check_main_function_declaration(&declarations) {
+            self.error_reporter.add_diagnostic(
+                "main.cm",
+                self.get_source_file_end_range(),
+                "the last declaration of the program must be main".into(),
+            );
+            return Err(());
+        }
         Ok(Program { declarations })
+    }
+
+    fn check_main_function_declaration(declarations: &Vec<Declaration>) -> Result<(), ()> {
+        match declarations.last() {
+            Some(Declaration::FunctionDeclaration(func)) => {
+                match &func.id {
+                    Identifier { value } if value == "main" => return Ok(()),
+                    _ => {}
+                }
+                Err(())
+            }
+            _ => Err(()),
+        }
     }
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_token(TokenType::INT) || self.match_token(TokenType::VOID) {
@@ -343,12 +358,26 @@ impl<'a> Parser<'a> {
         if let Ok(expr) = self.parse_assignment_expression() {
             return Ok(expr);
         }
+        self.error_reporter.pop_diagnostic("main.cm");
+        // println!("parse_expression: {}", self.error_reporter.emit_string());
         self.cursor = cursor;
         if let Ok(expr) = self.parse_simple_expression() {
-            // self.error_reporter.pop_diagnostic("main.cm");
             Ok(expr)
         } else {
             // println!("parse_expression: {}", self.error_reporter.emit_string());
+            if cursor < self.token_list.len() {
+                self.error_reporter.add_diagnostic(
+                    "main.cm",
+                    self.token_list[cursor].range(),
+                    format!("expected `(`, `identifier`, `number`, found {:?}", self.token_list[cursor].token_type),
+                );
+            } else {
+                self.error_reporter.add_diagnostic(
+                    "main.cm",
+                    self.get_source_file_end_range(),
+                    "".into(),
+                );
+            }
             Err(())
         }
     }
@@ -463,10 +492,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 _ => {
+                    let token = token.clone();
                     self.error_reporter.add_diagnostic(
                         "main.cm",
                         token.range(),
-                        "expected `Identifier`, `Num`, `LPAREN`".into(),
+                        "expected `Identifier`, `Num`, `LPAREN`".to_string(),
                     );
                     return Err(());
                 }
@@ -526,10 +556,11 @@ impl<'a> Parser<'a> {
                     });
                 }
                 _ => {
+                    let token = token.clone();
                     self.error_reporter.add_diagnostic(
                         "main.cm",
                         token.range(),
-                        format!("expected `int` or `void`, found {:?}", token.token_type)
+                        format!("expected `int` or `void`, found {:?}", token.token_type),
                     );
                     return Err(());
                 }
