@@ -1,18 +1,22 @@
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum TokenType {
-    // ENDFILE,
-    ERROR,
-    /* reserved words */
+#[derive(Copy, Debug, Clone, Eq, PartialEq)]
+pub enum Keyword {
     IF,
     ELSE,
     INT,
     RETURN,
     VOID,
     WHILE,
+    BOOL
+}
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum TokenType {
+    // ENDFILE,
+    ERROR,
+    /* reserved words */
     /* multicharacter tokens */
     ID,
     NUM,
-    // KEYWORD,
+    KEYWORD(Keyword),
     /* special symbols */
     PLUS,
     MINUS,

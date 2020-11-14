@@ -3,7 +3,7 @@
 2. declaration-list -> declaration-list | declaration  
 3. declaration -> var-declaration | function-declaration  
 4. var-declaration -> type-specifier **ID**; | type-specifier **ID** [**NUM**];  
-5. type-specifier -> **int** | **VOID**  
+5. type-specifier -> **int** | **VOID** | **bool** 
 6. fun-declaration -> type-specifier **ID** (params) compound-statement 
 7. params -> param-list | **ε**
 8. param-list -> param-list, param | param

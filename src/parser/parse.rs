@@ -1,6 +1,6 @@
 use crate::{
     error_emit::ErrorReporter,
-    lexer::token::{Token, TokenType},
+    lexer::token::{Keyword, Token, TokenType},
     parser::walk::*,
 };
 
@@ -42,9 +42,12 @@ impl<'a> Parser<'a> {
     }
     fn match_type_specifier(&mut self) -> bool {
         if let Some(token) = self.next_token() {
-            return token.token_type == TokenType::VOID || token.token_type == TokenType::INT;
+            token.token_type == TokenType::KEYWORD(Keyword::VOID)
+                || token.token_type == TokenType::KEYWORD(Keyword::INT)
+                || token.token_type == TokenType::KEYWORD(Keyword::BOOL)
+        } else {
+            false
         }
-        false
     }
     fn match_rel_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
@@ -145,7 +148,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
-        if self.match_token(TokenType::INT) || self.match_token(TokenType::VOID) {
+        if self.match_type_specifier() {
             self.consume(1);
         }
         if self.match_token(TokenType::ID) {
@@ -201,7 +204,7 @@ impl<'a> Parser<'a> {
         self.match_and_consume(TokenType::LPAREN, true)?;
         match self.next_token() {
             Some(token) => match token.token_type {
-                TokenType::VOID => {
+                TokenType::KEYWORD(Keyword::VOID) => {
                     self.consume(1);
                     params = Params::Void;
                 }
@@ -271,13 +274,15 @@ impl<'a> Parser<'a> {
                 TokenType::LBRACE => Ok(Statement::CompoundStatement(
                     self.parse_compound_statement()?,
                 )),
-                TokenType::IF => Ok(Statement::SelectionStatement(
+                TokenType::KEYWORD(Keyword::IF) => Ok(Statement::SelectionStatement(
                     self.parse_selection_statement()?,
                 )),
-                TokenType::WHILE => Ok(Statement::IterationStatement(
+                TokenType::KEYWORD(Keyword::WHILE) => Ok(Statement::IterationStatement(
                     self.parse_iteration_statement()?,
                 )),
-                TokenType::RETURN => Ok(Statement::ReturnStatement(self.parse_return_statement()?)),
+                TokenType::KEYWORD(Keyword::RETURN) => {
+                    Ok(Statement::ReturnStatement(self.parse_return_statement()?))
+                }
                 _ => Ok(self.parse_expression_statement()?),
             },
             None => {
@@ -287,7 +292,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
-        self.match_and_consume(TokenType::WHILE, true)?;
+        self.match_and_consume(TokenType::KEYWORD(Keyword::WHILE), true)?;
         let expression = self.parse_expression()?;
         let body = Some(Box::new(self.parse_statement()?));
         Ok(IterationStatement {
@@ -296,12 +301,12 @@ impl<'a> Parser<'a> {
         })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
-        self.match_and_consume(TokenType::IF, true)?;
+        self.match_and_consume(TokenType::KEYWORD(Keyword::IF), true)?;
         self.match_and_consume(TokenType::LPAREN, true)?;
         let test = self.parse_expression()?;
         self.match_and_consume(TokenType::RPAREN, true)?;
         let consequent = Box::new(self.parse_statement()?);
-        let alternative = if self.match_token(TokenType::ELSE) {
+        let alternative = if self.match_token(TokenType::KEYWORD(Keyword::ELSE)) {
             self.consume(1);
             Some(Box::new(self.parse_statement()?))
         } else {
@@ -314,7 +319,7 @@ impl<'a> Parser<'a> {
         })
     }
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
-        self.match_and_consume(TokenType::RETURN, true)?;
+        self.match_and_consume(TokenType::KEYWORD(Keyword::RETURN), true)?;
         let mut expression = None;
         if !self.match_token(TokenType::SEMI) {
             expression = Some(self.parse_expression()?);
@@ -551,13 +556,13 @@ impl<'a> Parser<'a> {
     fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
         if let Some(token) = self.next_token() {
             match token.token_type {
-                TokenType::INT => {
+                TokenType::KEYWORD(Keyword::INT) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Int,
                     });
                 }
-                TokenType::VOID => {
+                TokenType::KEYWORD(Keyword::VOID) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Void,
@@ -568,7 +573,7 @@ impl<'a> Parser<'a> {
                     self.error_reporter.add_diagnostic(
                         "main.cm",
                         token.range(),
-                        format!("expected `int` or `void`, found {:?}", token.token_type),
+                        format!("expected `int` or `void` or `bool`, found {:?}", token.token_type),
                     );
                     return Err(());
                 }

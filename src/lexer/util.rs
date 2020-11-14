@@ -1,5 +1,5 @@
+use crate::lexer::token::Keyword;
 use crate::lexer::token::TokenType;
-
 pub fn is_digit(ch: char) -> bool {
     ch.is_digit(10)
 }
@@ -17,12 +17,13 @@ pub fn is_letter(c: char) -> bool {
 
 pub fn keyword_or_id(s: &str) -> TokenType {
     match s {
-        "else" => TokenType::ELSE,
-        "if" => TokenType::IF,
-        "int" => TokenType::INT,
-        "return" => TokenType::RETURN,
-        "void" => TokenType::VOID,
-        "while" => TokenType::WHILE,
+        "else" => TokenType::KEYWORD(Keyword::ELSE),
+        "if" => TokenType::KEYWORD(Keyword::IF),
+        "int" => TokenType::KEYWORD(Keyword::INT),
+        "return" => TokenType::KEYWORD(Keyword::RETURN),
+        "void" => TokenType::KEYWORD(Keyword::VOID),
+        "while" => TokenType::KEYWORD(Keyword::WHILE),
+        "bool" => TokenType::KEYWORD(Keyword::BOOL),
         _ => TokenType::ID,
     }
 }

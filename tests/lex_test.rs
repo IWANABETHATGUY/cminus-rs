@@ -21,7 +21,7 @@ mod test_lex {
     use crate::lex_test_helper;
     use std::fs::read_to_string;
     use std::path;
-    use tinylang_rs::lexer::lex::Lexer;
+    use tinylang_rs::{T, lexer::{token::Keyword, lex::Lexer}};
     use tinylang_rs::lexer::token::{Position, TokenType};
     #[test]
     fn test_lex_meaningless() -> Result<(), std::io::Error> {
@@ -72,14 +72,14 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::VOID,
+            TokenType::KEYWORD(Keyword::VOID),
             Position::new(5, 0),
             Position::new(5, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::IF,
+            TokenType::KEYWORD(Keyword::IF),
             Position::new(5, 5),
             Position::new(5, 7),
         );
@@ -94,7 +94,7 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::WHILE,
+            TokenType::KEYWORD(Keyword::WHILE),
             Position::new(6, 0),
             Position::new(6, 5),
         );
@@ -123,7 +123,7 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::INT,
+            TokenType::KEYWORD(Keyword::INT),
             Position::new(8, 0),
             Position::new(8, 3),
         );
