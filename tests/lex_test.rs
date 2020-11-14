@@ -21,36 +21,39 @@ mod test_lex {
     use crate::lex_test_helper;
     use std::fs::read_to_string;
     use std::path;
-    use tinylang_rs::lexer::lex::Lexer;
     use tinylang_rs::lexer::token::{Position, TokenType};
+    use tinylang_rs::{
+        lexer::{lex::Lexer, token::KeywordType},
+        T,
+    };
     #[test]
     fn test_lex_meaningless() -> Result<(), std::io::Error> {
-        let path = path::Path::new("tests/fixtures/lexer.test.txt");
+        let path = path::Path::new("tests/fixtures/lexer/test.txt");
         let file = read_to_string(path)?;
         let mut lexer = Lexer::new(&file);
 
         let list = lexer.lex();
-        assert_eq!(list.len(), 26);
+        assert_eq!(list.len(), 37);
 
         let mut iter = list.into_iter();
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::NUM,
+            TokenType::NumberLiteral,
             Position::new(0, 0),
             Position::new(0, 6),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(0, 7),
             Position::new(0, 11),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::COMMENT,
+            TokenType::Comment,
             Position::new(0, 12),
             Position::new(2, 2),
         );
@@ -58,35 +61,35 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(3, 0),
             Position::new(3, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(4, 0),
             Position::new(4, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::VOID,
+            TokenType::Keyword(KeywordType::VOID),
             Position::new(5, 0),
             Position::new(5, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::IF,
+            TokenType::Keyword(KeywordType::IF),
             Position::new(5, 5),
             Position::new(5, 7),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::NUM,
+            TokenType::NumberLiteral,
             Position::new(5, 8),
             Position::new(5, 13),
         );
@@ -94,21 +97,21 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::WHILE,
+            TokenType::Keyword(KeywordType::WHILE),
             Position::new(6, 0),
             Position::new(6, 5),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(7, 0),
             Position::new(7, 1),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::MULTIPLY,
+            TokenType::Multiply,
             Position::new(7, 2),
             Position::new(7, 3),
         );
@@ -116,107 +119,184 @@ mod test_lex {
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::NUM,
+            TokenType::NumberLiteral,
             Position::new(7, 4),
             Position::new(7, 5),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::INT,
+            TokenType::Keyword(KeywordType::INT),
             Position::new(8, 0),
             Position::new(8, 3),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(8, 4),
             Position::new(8, 5),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ASSIGN,
+            TokenType::Assign,
             Position::new(8, 6),
             Position::new(8, 7),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::NUM,
+            TokenType::NumberLiteral,
             Position::new(8, 8),
             Position::new(8, 9),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::SEMI,
+            TokenType::Semi,
             Position::new(8, 9),
             Position::new(8, 10),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::ID,
+            TokenType::Id,
             Position::new(9, 0),
             Position::new(9, 1),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::EQ,
+            TokenType::Eq,
             Position::new(9, 2),
             Position::new(9, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::NUM,
+            TokenType::NumberLiteral,
             Position::new(9, 5),
             Position::new(9, 6),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::LPAREN,
+            TokenType::Lparen,
             Position::new(10, 0),
             Position::new(10, 1),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::RPAREN,
+            TokenType::Rparen,
             Position::new(10, 1),
             Position::new(10, 2),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::LBRACK,
+            TokenType::Lbrack,
             Position::new(10, 2),
             Position::new(10, 3),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::RBRACK,
+            TokenType::Rbrack,
             Position::new(10, 3),
             Position::new(10, 4),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::LBRACE,
+            TokenType::Lbrace,
             Position::new(10, 4),
             Position::new(10, 5),
         );
         lex_test_helper(
             &file,
             iter.next(),
-            TokenType::RBRACE,
+            TokenType::Rbrace,
             Position::new(10, 5),
             Position::new(10, 6),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Keyword(KeywordType::BOOL),
+            Position::new(11, 0),
+            Position::new(11, 4),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(11, 5),
+            Position::new(11, 6),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Semi,
+            Position::new(11, 6),
+            Position::new(11, 7),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(12, 0),
+            Position::new(12, 1),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Assign,
+            Position::new(12, 2),
+            Position::new(12, 3),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::BooleanLiteral,
+            Position::new(12, 4),
+            Position::new(12, 8),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Semi,
+            Position::new(12, 8),
+            Position::new(12,9),
+        );
+         lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(13, 0),
+            Position::new(13, 1),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Assign,
+            Position::new(13, 2),
+            Position::new(13, 3),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::BooleanLiteral,
+            Position::new(13, 4),
+            Position::new(13, 9),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Semi,
+            Position::new(13, 9),
+            Position::new(13,10),
         );
         Ok(())
     }

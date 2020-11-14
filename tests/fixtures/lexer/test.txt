@@ -9,3 +9,6 @@ a * 3
 int a = 3;
 a == 3
 ()[]{}
+bool a;
+a = true;
+a = false;

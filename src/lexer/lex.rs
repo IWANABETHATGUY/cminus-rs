@@ -66,7 +66,7 @@ impl Lexer {
        
         let mut token: Option<Token> = None;
         let mut state = State::START;
-        let mut cur_token_type = TokenType::ERROR;
+        let mut cur_token_type = TokenType::Error;
         let mut cur_line = 0;
         let mut cur_column = 0;
         let mut flag = false;
@@ -82,49 +82,49 @@ impl Lexer {
                         state = State::INLESS;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::LT;
+                            cur_token_type = TokenType::Lt;
                         }
                     }
                     '/' => {
                         state = State::INDIVIDE;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::TIMES;
+                            cur_token_type = TokenType::Times;
                         }
                     }
                     '>' => {
                         state = State::INGREAT;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::GT;
+                            cur_token_type = TokenType::Gt;
                         }
                     }
                     '!' => {
                         state = State::INNOTEQUAL;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::ERROR;
+                            cur_token_type = TokenType::Error;
                         }
                     }
                     '=' => {
                         state = State::INASSIGN;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::ASSIGN;
+                            cur_token_type = TokenType::Assign;
                         }
                     }
                     _ if util::is_digit(cur_char) => {
                         state = State::INNUM;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::NUM;
+                            cur_token_type = TokenType::NumberLiteral;
                         }
                     }
                     _ if util::is_letter(cur_char) => {
                         state = State::INID;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::ID;
+                            cur_token_type = TokenType::Id;
                         }
                     }
                     _ if cur_char == '\n' => {
@@ -145,18 +145,18 @@ impl Lexer {
                     _ => {
                         state = State::DONE;
                         match cur_char {
-                            '+' => cur_token_type = TokenType::PLUS,
-                            '*' => cur_token_type = TokenType::MULTIPLY,
-                            '-' => cur_token_type = TokenType::MINUS,
-                            '(' => cur_token_type = TokenType::LPAREN,
-                            ')' => cur_token_type = TokenType::RPAREN,
-                            ';' => cur_token_type = TokenType::SEMI,
-                            ',' => cur_token_type = TokenType::COMMA,
-                            '[' => cur_token_type = TokenType::LBRACK,
-                            ']' => cur_token_type = TokenType::RBRACK,
-                            '{' => cur_token_type = TokenType::LBRACE,
-                            '}' => cur_token_type = TokenType::RBRACE,
-                            _ => cur_token_type = TokenType::ERROR,
+                            '+' => cur_token_type = TokenType::Plus,
+                            '*' => cur_token_type = TokenType::Multiply,
+                            '-' => cur_token_type = TokenType::Minus,
+                            '(' => cur_token_type = TokenType::Lparen,
+                            ')' => cur_token_type = TokenType::Rparen,
+                            ';' => cur_token_type = TokenType::Semi,
+                            ',' => cur_token_type = TokenType::Comma,
+                            '[' => cur_token_type = TokenType::Lbrack,
+                            ']' => cur_token_type = TokenType::Rbrack,
+                            '{' => cur_token_type = TokenType::Lbrace,
+                            '}' => cur_token_type = TokenType::Rbrace,
+                            _ => cur_token_type = TokenType::Error,
                         }
                     }
                 },
@@ -165,14 +165,14 @@ impl Lexer {
                         state = State::INCOMMENT;
                         if self.cursor == self.length {
                             state = State::DONE;
-                            cur_token_type = TokenType::ERROR;
+                            cur_token_type = TokenType::Error;
                         }
                     }
                     _ => {
                         state = State::DONE;
                         self.unget_next_char();
                         save = false;
-                        cur_token_type = TokenType::TIMES;
+                        cur_token_type = TokenType::Times;
                     }
                 },
                 // State::INMULTPLY => {} // do nothing
@@ -181,10 +181,10 @@ impl Lexer {
                         self.unget_next_char();
                         save = false;
                         state = State::DONE;
-                        cur_token_type = TokenType::NUM;
+                        cur_token_type = TokenType::NumberLiteral;
                     } else if self.cursor == self.length {
                         state = State::DONE;
-                        cur_token_type = TokenType::NUM;
+                        cur_token_type = TokenType::NumberLiteral;
                     }
                 }
                 State::INID => {
@@ -192,51 +192,51 @@ impl Lexer {
                         self.unget_next_char();
                         save = false;
                         state = State::DONE;
-                        cur_token_type = TokenType::ID;
+                        cur_token_type = TokenType::Id;
                     } else if self.cursor == self.length {
                         state = State::DONE;
-                        cur_token_type = TokenType::ID;
+                        cur_token_type = TokenType::Id;
                     }
                 }
                 State::DONE => {} // do nothing
                 State::INLESS => {
                     state = State::DONE;
                     if cur_char == '=' {
-                        cur_token_type = TokenType::LE;
+                        cur_token_type = TokenType::Le;
                     } else {
                         self.unget_next_char();
                         save = false;
-                        cur_token_type = TokenType::LT;
+                        cur_token_type = TokenType::Lt;
                     }
                 }
                 State::INGREAT => {
                     state = State::DONE;
                     if cur_char == '=' {
-                        cur_token_type = TokenType::GE;
+                        cur_token_type = TokenType::Ge;
                     } else {
                         self.unget_next_char();
                         save = false;
-                        cur_token_type = TokenType::GT;
+                        cur_token_type = TokenType::Gt;
                     }
                 }
                 State::INASSIGN => {
                     state = State::DONE;
                     if cur_char == '=' {
-                        cur_token_type = TokenType::EQ;
+                        cur_token_type = TokenType::Eq;
                     } else {
                         self.unget_next_char();
                         save = false;
-                        cur_token_type = TokenType::ASSIGN;
+                        cur_token_type = TokenType::Assign;
                     }
                 }
                 State::INNOTEQUAL => {
                     state = State::DONE;
                     if cur_char == '=' {
-                        cur_token_type = TokenType::NE;
+                        cur_token_type = TokenType::Ne;
                     } else {
                         self.unget_next_char();
                         save = false;
-                        cur_token_type = TokenType::ERROR;
+                        cur_token_type = TokenType::Error;
                     }
                 }
                 State::INCOMMENT => {
@@ -253,7 +253,7 @@ impl Lexer {
                     }
                     if self.cursor == self.length {
                         state = State::DONE;
-                        cur_token_type = TokenType::ERROR;
+                        cur_token_type = TokenType::Error;
                     }
                 }
                 State::INECOMMENT => {
@@ -261,7 +261,7 @@ impl Lexer {
                         state = State::START;
                         if self.display_comment {
                             state = State::DONE;
-                            cur_token_type = TokenType::COMMENT;
+                            cur_token_type = TokenType::Comment;
                         } else {
                             save = false;
                             result = "".to_string();
@@ -288,7 +288,7 @@ impl Lexer {
                 flag = true;
             }
             if state == State::DONE && !result.is_empty() {
-                if cur_token_type == TokenType::ID {
+                if cur_token_type == TokenType::Id {
                     cur_token_type = Self::keyword_or_id_token(&result);
                 }
                 token = Some(Token::new(

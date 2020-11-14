@@ -1,6 +1,6 @@
 use crate::{
     error_emit::ErrorReporter,
-    lexer::token::{Token, TokenType},
+    lexer::token::{KeywordType, Token, TokenType},
     parser::walk::*,
 };
 
@@ -15,7 +15,7 @@ impl<'a> Parser<'a> {
     pub fn new(token_list: Vec<Token>, source_file: &'a str) -> Parser<'a> {
         let token_list = token_list
             .into_iter()
-            .filter(|token| token.token_type != TokenType::COMMENT)
+            .filter(|token| token.token_type != TokenType::Comment)
             .collect();
         let mut error_reporter = ErrorReporter::new();
         error_reporter.add_file("main.cm", source_file.to_string());
@@ -42,19 +42,22 @@ impl<'a> Parser<'a> {
     }
     fn match_type_specifier(&mut self) -> bool {
         if let Some(token) = self.next_token() {
-            return token.token_type == TokenType::VOID || token.token_type == TokenType::INT;
+            token.token_type == TokenType::Keyword(KeywordType::VOID)
+                || token.token_type == TokenType::Keyword(KeywordType::INT)
+                || token.token_type == TokenType::Keyword(KeywordType::BOOL)
+        } else {
+            false
         }
-        false
     }
     fn match_rel_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
             match token.token_type {
-                TokenType::LE => return Some(Operation::LE),
-                TokenType::GE => return Some(Operation::GE),
-                TokenType::GT => return Some(Operation::GT),
-                TokenType::LT => return Some(Operation::LT),
-                TokenType::EQ => return Some(Operation::EQ),
-                TokenType::NE => return Some(Operation::NE),
+                TokenType::Le => return Some(Operation::LE),
+                TokenType::Ge => return Some(Operation::GE),
+                TokenType::Gt => return Some(Operation::GT),
+                TokenType::Lt => return Some(Operation::LT),
+                TokenType::Eq => return Some(Operation::EQ),
+                TokenType::Ne => return Some(Operation::NE),
                 _ => return None,
             }
         }
@@ -63,8 +66,8 @@ impl<'a> Parser<'a> {
     fn match_add_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
             match token.token_type {
-                TokenType::PLUS => return Some(Operation::PLUS),
-                TokenType::MINUS => return Some(Operation::MINUS),
+                TokenType::Plus => return Some(Operation::PLUS),
+                TokenType::Minus => return Some(Operation::MINUS),
                 _ => return None,
             }
         }
@@ -73,8 +76,8 @@ impl<'a> Parser<'a> {
     fn match_mul_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
             match token.token_type {
-                TokenType::MULTIPLY => return Some(Operation::MULTIPLY),
-                TokenType::TIMES => return Some(Operation::DIVIDE),
+                TokenType::Multiply => return Some(Operation::MULTIPLY),
+                TokenType::Times => return Some(Operation::DIVIDE),
                 _ => return None,
             }
         }
@@ -145,13 +148,13 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
-        if self.match_token(TokenType::INT) || self.match_token(TokenType::VOID) {
+        if self.match_type_specifier() {
             self.consume(1);
         }
-        if self.match_token(TokenType::ID) {
+        if self.match_token(TokenType::Id) {
             self.consume(1);
         }
-        if self.match_token(TokenType::LPAREN) {
+        if self.match_token(TokenType::Lparen) {
             self.backtrack(2);
             return self.parse_function_declaration();
         } else {
@@ -162,14 +165,14 @@ impl<'a> Parser<'a> {
 
     fn parse_variable_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID, true)?;
+        let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
         };
         let mut num = None;
-        if self.match_token(TokenType::LBRACK) {
+        if self.match_token(TokenType::Lbrack) {
             self.consume(1);
-            let num_token = self.match_and_consume(TokenType::NUM, true)?;
+            let num_token = self.match_and_consume(TokenType::NumberLiteral, true)?;
             let value = if let Ok(value) = num_token.content.parse::<i32>() {
                 value
             } else {
@@ -181,9 +184,9 @@ impl<'a> Parser<'a> {
                 return Err(());
             };
             num = Some(NumberLiteral { value });
-            self.match_and_consume(TokenType::RBRACK, true)?;
+            self.match_and_consume(TokenType::Rbrack, true)?;
         }
-        self.match_and_consume(TokenType::SEMI, true)?;
+        self.match_and_consume(TokenType::Semi, true)?;
         Ok(Declaration::VarDeclaration(VarDeclaration {
             type_specifier,
             id: identifier,
@@ -193,26 +196,26 @@ impl<'a> Parser<'a> {
 
     fn parse_function_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID, true)?;
+        let id_token = self.match_and_consume(TokenType::Id, true)?;
         let mut params: Params = Params::Void;
         let identifier = Identifier {
             value: id_token.content,
         };
-        self.match_and_consume(TokenType::LPAREN, true)?;
+        self.match_and_consume(TokenType::Lparen, true)?;
         match self.next_token() {
             Some(token) => match token.token_type {
-                TokenType::VOID => {
+                TokenType::Keyword(KeywordType::VOID) => {
                     self.consume(1);
                     params = Params::Void;
                 }
                 // TokenType::LPAREN => {}
                 _ => {
                     let mut params_list = vec![];
-                    if !self.match_token(TokenType::RPAREN) {
+                    if !self.match_token(TokenType::Rparen) {
                         params_list.push(self.parse_param()?);
                     }
-                    while !self.match_token(TokenType::RPAREN) {
-                        self.match_and_consume(TokenType::COMMA, true)?;
+                    while !self.match_token(TokenType::Rparen) {
+                        self.match_and_consume(TokenType::Comma, true)?;
                         params_list.push(self.parse_param()?);
                     }
                     params = Params::ParamsList {
@@ -222,7 +225,7 @@ impl<'a> Parser<'a> {
             },
             None => {}
         }
-        self.match_and_consume(TokenType::RPAREN, true)?;
+        self.match_and_consume(TokenType::Rparen, true)?;
         let body = self.parse_compound_statement()?;
         Ok(Declaration::FunctionDeclaration(FunctionDeclaration {
             type_specifier,
@@ -233,7 +236,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ()> {
-        self.match_and_consume(TokenType::LBRACE, true)?;
+        self.match_and_consume(TokenType::Lbrace, true)?;
         let mut local_declaration = vec![];
         let mut statement_list = vec![];
         while self.match_type_specifier() {
@@ -256,10 +259,10 @@ impl<'a> Parser<'a> {
                 }
             }
         }
-        while !self.match_token(TokenType::RBRACE) {
+        while !self.match_token(TokenType::Rbrace) {
             statement_list.push(self.parse_statement()?);
         }
-        self.match_and_consume(TokenType::RBRACE, true)?;
+        self.match_and_consume(TokenType::Rbrace, true)?;
         Ok(CompoundStatement {
             local_declaration,
             statement_list,
@@ -268,16 +271,18 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Result<Statement, ()> {
         match self.next_token() {
             Some(token) => match token.token_type {
-                TokenType::LBRACE => Ok(Statement::CompoundStatement(
+                TokenType::Lbrace => Ok(Statement::CompoundStatement(
                     self.parse_compound_statement()?,
                 )),
-                TokenType::IF => Ok(Statement::SelectionStatement(
+                TokenType::Keyword(KeywordType::IF) => Ok(Statement::SelectionStatement(
                     self.parse_selection_statement()?,
                 )),
-                TokenType::WHILE => Ok(Statement::IterationStatement(
+                TokenType::Keyword(KeywordType::WHILE) => Ok(Statement::IterationStatement(
                     self.parse_iteration_statement()?,
                 )),
-                TokenType::RETURN => Ok(Statement::ReturnStatement(self.parse_return_statement()?)),
+                TokenType::Keyword(KeywordType::RETURN) => {
+                    Ok(Statement::ReturnStatement(self.parse_return_statement()?))
+                }
                 _ => Ok(self.parse_expression_statement()?),
             },
             None => {
@@ -287,7 +292,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
-        self.match_and_consume(TokenType::WHILE, true)?;
+        self.match_and_consume(TokenType::Keyword(KeywordType::WHILE), true)?;
         let expression = self.parse_expression()?;
         let body = Some(Box::new(self.parse_statement()?));
         Ok(IterationStatement {
@@ -296,12 +301,12 @@ impl<'a> Parser<'a> {
         })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
-        self.match_and_consume(TokenType::IF, true)?;
-        self.match_and_consume(TokenType::LPAREN, true)?;
+        self.match_and_consume(TokenType::Keyword(KeywordType::IF), true)?;
+        self.match_and_consume(TokenType::Lparen, true)?;
         let test = self.parse_expression()?;
-        self.match_and_consume(TokenType::RPAREN, true)?;
+        self.match_and_consume(TokenType::Rparen, true)?;
         let consequent = Box::new(self.parse_statement()?);
-        let alternative = if self.match_token(TokenType::ELSE) {
+        let alternative = if self.match_token(TokenType::Keyword(KeywordType::ELSE)) {
             self.consume(1);
             Some(Box::new(self.parse_statement()?))
         } else {
@@ -314,29 +319,29 @@ impl<'a> Parser<'a> {
         })
     }
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
-        self.match_and_consume(TokenType::RETURN, true)?;
+        self.match_and_consume(TokenType::Keyword(KeywordType::RETURN), true)?;
         let mut expression = None;
-        if !self.match_token(TokenType::SEMI) {
+        if !self.match_token(TokenType::Semi) {
             expression = Some(self.parse_expression()?);
         }
-        self.match_and_consume(TokenType::SEMI, true)?;
+        self.match_and_consume(TokenType::Semi, true)?;
         Ok(ReturnStatement { expression })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ()> {
         let mut expression = None;
-        if !self.match_token(TokenType::SEMI) {
+        if !self.match_token(TokenType::Semi) {
             expression = Some(self.parse_expression()?);
         }
-        self.match_and_consume(TokenType::SEMI, true)?;
+        self.match_and_consume(TokenType::Semi, true)?;
         Ok(Statement::ExpressionStatement(ExpressionStatement {
             expression,
         }))
     }
 
     fn parse_var(&mut self) -> Result<Var, ()> {
-        let id = self.match_and_consume(TokenType::ID, true)?;
+        let id = self.match_and_consume(TokenType::Id, true)?;
         let mut expression = None;
-        if self.match_token(TokenType::LBRACK) {
+        if self.match_token(TokenType::Lbrack) {
             expression = Some(Box::new(self.parse_expression()?));
         }
         Ok(Var {
@@ -346,7 +351,7 @@ impl<'a> Parser<'a> {
     }
     fn parse_assignment_expression(&mut self) -> Result<Expression, ()> {
         let var = self.parse_var()?;
-        self.match_and_consume(TokenType::ASSIGN, true)?;
+        self.match_and_consume(TokenType::Assign, true)?;
         let expression = self.parse_expression()?;
         Ok(Expression::Assignment(AssignmentExpression {
             lhs: var,
@@ -437,7 +442,7 @@ impl<'a> Parser<'a> {
             let content = token.content.clone();
             let range = token.range();
             match token.token_type {
-                TokenType::NUM => {
+                TokenType::NumberLiteral => {
                     self.consume(1);
                     let value = if let Ok(value) = content.parse::<i32>() {
                         value
@@ -453,21 +458,27 @@ impl<'a> Parser<'a> {
                         value,
                     })));
                 }
-                TokenType::LPAREN => {
+                TokenType::BooleanLiteral => {
+                    self.consume(1);
+                    return Ok(Expression::Factor(Factor::BooleanLiteral(BooleanLiteral {
+                        value: content.parse::<bool>().unwrap(),
+                    })));
+                }
+                TokenType::Lparen => {
                     self.consume(1);
                     let expression = self.parse_expression()?;
-                    self.match_and_consume(TokenType::RPAREN, true)?;
+                    self.match_and_consume(TokenType::Rparen, true)?;
                     return Ok(Expression::Factor(Factor::Expression(Box::new(expression))));
                 }
-                TokenType::ID => {
+                TokenType::Id => {
                     let value = token.content.clone();
                     self.consume(1);
                     if let Some(token) = self.next_token() {
                         match token.token_type {
-                            TokenType::LPAREN => {
+                            TokenType::Lparen => {
                                 self.consume(1);
                                 let arguments = self.parse_args()?;
-                                self.match_and_consume(TokenType::RPAREN, true)?;
+                                self.match_and_consume(TokenType::Rparen, true)?;
                                 return Ok(Expression::Factor(Factor::CallExpression(
                                     CallExpression {
                                         arguments,
@@ -475,10 +486,10 @@ impl<'a> Parser<'a> {
                                     },
                                 )));
                             }
-                            TokenType::LBRACK => {
+                            TokenType::Lbrack => {
                                 self.consume(1);
                                 let local_expression = self.parse_expression()?;
-                                self.match_and_consume(TokenType::RBRACK, true)?;
+                                self.match_and_consume(TokenType::Rbrack, true)?;
                                 let var = Var {
                                     id: Identifier { value },
                                     expression: Some(Box::new(local_expression)),
@@ -520,11 +531,11 @@ impl<'a> Parser<'a> {
     }
     fn parse_args(&mut self) -> Result<Vec<Expression>, ()> {
         let mut args = vec![];
-        if !self.match_token(TokenType::RPAREN) {
+        if !self.match_token(TokenType::Rparen) {
             args.push(self.parse_expression()?);
         }
-        while !self.match_token(TokenType::RPAREN) {
-            self.match_and_consume(TokenType::COMMA, true)?;
+        while !self.match_token(TokenType::Rparen) {
+            self.match_and_consume(TokenType::Comma, true)?;
             args.push(self.parse_expression()?);
         }
         Ok(args)
@@ -532,14 +543,14 @@ impl<'a> Parser<'a> {
 
     fn parse_param(&mut self) -> Result<Parameter, ()> {
         let type_specifier = self.parse_type_specifier()?;
-        let id_token = self.match_and_consume(TokenType::ID, true)?;
+        let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
         };
         let mut is_array = false;
-        if self.match_token(TokenType::LBRACK) {
-            self.match_and_consume(TokenType::LBRACK, true)?;
-            self.match_and_consume(TokenType::RBRACK, true)?;
+        if self.match_token(TokenType::Lbrack) {
+            self.match_and_consume(TokenType::Lbrack, true)?;
+            self.match_and_consume(TokenType::Rbrack, true)?;
             is_array = true;
         }
         Ok(Parameter {
@@ -551,16 +562,22 @@ impl<'a> Parser<'a> {
     fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
         if let Some(token) = self.next_token() {
             match token.token_type {
-                TokenType::INT => {
+                TokenType::Keyword(KeywordType::INT) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Int,
                     });
                 }
-                TokenType::VOID => {
+                TokenType::Keyword(KeywordType::VOID) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Void,
+                    });
+                }
+                TokenType::Keyword(KeywordType::BOOL) => {
+                    self.consume(1);
+                    return Ok(TypeSpecifier {
+                        kind: TypeSpecifierKind::Boolean,
                     });
                 }
                 _ => {
@@ -568,7 +585,10 @@ impl<'a> Parser<'a> {
                     self.error_reporter.add_diagnostic(
                         "main.cm",
                         token.range(),
-                        format!("expected `int` or `void`, found {:?}", token.token_type),
+                        format!(
+                            "expected `int` or `void` or `bool`, found {:?}",
+                            token.token_type
+                        ),
                     );
                     return Err(());
                 }
