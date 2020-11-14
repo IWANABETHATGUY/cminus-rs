@@ -25,7 +25,8 @@
 23. addop -> **+** | **-**
 24. term -> term mulop term | factor
 25. mulop  -> * | **/**
-26. factor -> (expression) | var | call | NUM
+26. factor -> (expression) | var | call | NUM | **BoolLiteral**
 27. call -> **ID** (args)
 28. args -> arg-list | ε
 29. arg-list -> arg-list expression | expression
+30. BoolLiteral -> true | false

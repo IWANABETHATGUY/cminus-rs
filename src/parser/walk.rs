@@ -46,7 +46,7 @@ pub struct VarDeclaration {
 impl Walk for VarDeclaration {
     fn walk(&self, level: usize) -> String {
         let ast = format!("{}VarDeclaration\n", " ".repeat(2 * level));
-        let mut children = vec![self.id.walk(level + 1), self.type_specifier.walk(level + 1)];
+        let mut children = vec![self.type_specifier.walk(level + 1), self.id.walk(level + 1)];
         if let Some(ref num) = self.num {
             children.push(num.walk(level + 1));
         }
@@ -85,6 +85,15 @@ impl Walk for NumberLiteral {
     }
 }
 #[derive(Debug)]
+pub struct BooleanLiteral {
+    pub(crate) value: bool,
+}
+impl Walk for BooleanLiteral {
+    fn walk(&self, level: usize) -> String {
+        format!("{}BooleanLiteral({})", " ".repeat(2 * level), self.value)
+    }
+}
+#[derive(Debug)]
 pub struct TypeSpecifier {
     pub(crate) kind: TypeSpecifierKind,
 }
@@ -98,6 +107,7 @@ impl Walk for TypeSpecifier {
 pub(crate) enum TypeSpecifierKind {
     Int,
     Void,
+    Boolean,
 }
 #[derive(Debug)]
 pub enum Params {
@@ -351,6 +361,7 @@ pub enum Factor {
     Var(Var),
     CallExpression(CallExpression),
     NumberLiteral(NumberLiteral),
+    BooleanLiteral(BooleanLiteral)
 }
 
 impl Walk for Factor {
@@ -360,6 +371,7 @@ impl Walk for Factor {
             Factor::Var(var) => var.walk(level),
             Factor::CallExpression(call) => call.walk(level),
             Factor::NumberLiteral(num) => num.walk(level),
+            Factor::BooleanLiteral(boolean) => boolean.walk(level)
         }
     }
 }
@@ -382,6 +394,10 @@ impl Walk for CallExpression {
                 .collect::<Vec<String>>()
                 .join("\n"),
         ];
-        ast + &children.into_iter().filter(|item|!item.is_empty()).collect::<Vec<String>>().join("\n")
+        ast + &children
+            .into_iter()
+            .filter(|item| !item.is_empty())
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }

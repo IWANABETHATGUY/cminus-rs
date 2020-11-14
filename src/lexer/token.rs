@@ -1,5 +1,5 @@
 #[derive(Copy, Debug, Clone, Eq, PartialEq)]
-pub enum Keyword {
+pub enum KeywordType {
     IF,
     ELSE,
     INT,
@@ -11,33 +11,34 @@ pub enum Keyword {
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TokenType {
     // ENDFILE,
-    ERROR,
+    Error,
     /* reserved words */
     /* multicharacter tokens */
-    ID,
-    NUM,
-    KEYWORD(Keyword),
+    Id,
+    NumberLiteral,
+    BooleanLiteral,
+    Keyword(KeywordType),
     /* special symbols */
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    TIMES,
-    LT,
-    LE,
-    GT,
-    GE,
-    EQ,
-    NE,
-    SEMI,
-    COMMA,
-    LPAREN, // (
-    RPAREN, // )
-    LBRACK, // [
-    RBRACK, // ]
-    LBRACE, // {
-    RBRACE, // }
-    COMMENT,
-    ASSIGN,
+    Plus,
+    Minus,
+    Multiply,
+    Times,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    Eq,
+    Ne,
+    Semi,
+    Comma,
+    Lparen, // (
+    Rparen, // )
+    Lbrack, // [
+    Rbrack, // ]
+    Lbrace, // {
+    Rbrace, // }
+    Comment,
+    Assign,
 }
 //left close, right open
 #[derive(PartialEq, Eq, Debug, Clone)]
