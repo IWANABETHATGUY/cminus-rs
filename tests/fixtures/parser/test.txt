@@ -11,5 +11,6 @@ bool fibonacci(int i, bool a) {
    
 }
 void main() {
-   
+  int a;
+  a = 3; 
 }

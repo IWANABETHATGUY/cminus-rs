@@ -1,10 +1,11 @@
+#![feature(box_patterns)]
 mod error_emit;
 mod lexer;
 mod parser;
 mod interpreter;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
-use std::fs::read_to_string;
+use std::{collections::HashMap, fs::read_to_string};
 use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/parser/test.txt");
