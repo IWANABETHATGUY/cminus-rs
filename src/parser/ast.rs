@@ -2,7 +2,7 @@ pub trait Walk {
     fn walk(&self, level: usize) -> String;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
 }
@@ -17,7 +17,7 @@ impl Walk for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -37,7 +37,7 @@ impl Walk for FunctionDeclaration {
         ast
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -53,7 +53,7 @@ impl Walk for VarDeclaration {
         ast + &children.join("\n")
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Declaration {
     FunctionDeclaration(FunctionDeclaration),
     VarDeclaration(VarDeclaration),
@@ -66,7 +66,7 @@ impl Walk for Declaration {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Identifier {
     pub(crate) value: String,
 }
@@ -75,7 +75,7 @@ impl Walk for Identifier {
         format!("{}Identifier({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NumberLiteral {
     pub(crate) value: i32,
 }
@@ -84,7 +84,7 @@ impl Walk for NumberLiteral {
         format!("{}NumberLiteral({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BooleanLiteral {
     pub(crate) value: bool,
 }
@@ -93,7 +93,7 @@ impl Walk for BooleanLiteral {
         format!("{}BooleanLiteral({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeSpecifier {
     pub(crate) kind: TypeSpecifierKind,
 }
@@ -103,13 +103,13 @@ impl Walk for TypeSpecifier {
         format!("{}TypeSpecifier({:?})", " ".repeat(2 * level), self.kind)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum TypeSpecifierKind {
     Int,
     Void,
     Boolean,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Params {
     Void,
     ParamsList { params: Vec<Parameter> },
@@ -137,7 +137,7 @@ impl Walk for Params {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -156,7 +156,7 @@ impl Walk for Parameter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompoundStatement {
     pub(crate) local_declaration: Vec<VarDeclaration>,
     pub(crate) statement_list: Vec<Statement>,
@@ -190,7 +190,7 @@ impl Walk for CompoundStatement {
         ast
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     CompoundStatement(CompoundStatement),
     ExpressionStatement(ExpressionStatement),
@@ -210,7 +210,7 @@ impl Walk for Statement {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SelectionStatement {
     pub(crate) test: Expression,
     pub(crate) consequent: Box<Statement>,
@@ -231,7 +231,7 @@ impl Walk for SelectionStatement {
             .join("\n")
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IterationStatement {
     pub(crate) test: Expression,
     pub(crate) body: Option<Box<Statement>>,
@@ -250,7 +250,7 @@ impl Walk for IterationStatement {
         ast + &children.join("\n")
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReturnStatement {
     pub(crate) expression: Option<Expression>,
 }
@@ -264,7 +264,7 @@ impl Walk for ReturnStatement {
         ast
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExpressionStatement {
     pub(crate) expression: Option<Expression>,
 }
@@ -279,7 +279,7 @@ impl Walk for ExpressionStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Assignment(AssignmentExpression),
     BinaryExpression(BinaryExpression),
@@ -306,7 +306,7 @@ impl Walk for Expression {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssignmentExpression {
     pub(crate) lhs: Var,
     pub(crate) rhs: Box<Expression>,
@@ -318,7 +318,7 @@ impl Walk for AssignmentExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Var {
     pub(crate) id: Identifier,
     pub(crate) expression: Option<Box<Expression>>,
@@ -330,13 +330,13 @@ impl Walk for Var {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
     pub(crate) operation: Operation,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Operation {
     GT,
     LT,
@@ -355,7 +355,7 @@ impl Walk for Operation {
         format!("{}{:?}", " ".repeat(2 * level), self)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Factor {
     Expression(Box<Expression>),
     Var(Var),
@@ -375,7 +375,7 @@ impl Walk for Factor {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CallExpression {
     pub(crate) id: Identifier,
     pub(crate) arguments: Vec<Expression>,

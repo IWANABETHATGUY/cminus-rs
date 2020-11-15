@@ -1,6 +1,7 @@
 mod error_emit;
 mod lexer;
 mod parser;
+mod interpreter;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
 use std::fs::read_to_string;
@@ -12,14 +13,15 @@ fn main() -> Result<(), std::io::Error> {
     let list = lex.lex();
     // println!("{:?}", list);
     let mut parser = Parser::new(list, &source_code);
-    let res = match parser.parse_program() {
+    let mut res = match parser.parse_program() {
         Ok(prog) => prog,
         Err(_) => {
             parser.error_reporter.emit_std()?;
             return Ok(());
         }
     };
+    interpreter::interpret(&mut res);
     // parser.error_reporter.emit_std()?;
-    println!("{}", res.walk(0));
+    // println!("{}", res.walk(0));
     Ok(())
 }
