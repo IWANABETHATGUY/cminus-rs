@@ -102,9 +102,7 @@ impl Evaluate for Statement {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self {
             Statement::CompoundStatement(stat) => stat.evaluate(env),
-            Statement::ExpressionStatement(stat) => {
-                stat.evaluate(env)
-            }
+            Statement::ExpressionStatement(stat) => stat.evaluate(env),
             Statement::SelectionStatement(_) => {
                 unimplemented!() // TODO
             }
@@ -150,11 +148,9 @@ impl Evaluate for Expression {
         match self {
             Expression::Assignment(assignment) => assignment.evaluate(env),
             Expression::BinaryExpression(binary_expr) => {
-                unimplemented!() // TODO
+                binary_expr.evaluate(env)
             }
-            Expression::Factor(factor) => {
-                factor.evaluate(env)
-            }
+            Expression::Factor(factor) => factor.evaluate(env),
         }
     }
 }
@@ -174,6 +170,73 @@ impl Evaluate for AssignmentExpression {
     }
 }
 
+impl Evaluate for BinaryExpression {
+    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+        let left_eval = &self.left.evaluate(env)?;
+        let right_eval = &self.right.evaluate(env)?;
+        match (left_eval, right_eval) {
+            (
+                Binding::Literal(LiteralType::Number(_)),
+                Binding::Literal(LiteralType::Number(_)),
+            ) => evaluate_binary_expression_literal(left_eval, right_eval, &self.operation),
+            (
+                Binding::Literal(LiteralType::Boolean(_)),
+                Binding::Literal(LiteralType::Boolean(_)),
+            ) => evaluate_binary_expression_literal(left_eval, right_eval, &self.operation),
+            (Binding::Literal(_), Binding::Variable(var)) => {
+                if let Some(right_var) = env.get(var) {
+                    evaluate_binary_expression_literal(left_eval, right_var, &self.operation)
+                } else {
+                    Err(())
+                }
+            }
+            (Binding::Variable(var), Binding::Literal(_)) => {
+                if let Some(left_var) = env.get(var) {
+                    evaluate_binary_expression_literal(left_var, right_eval, &self.operation)
+                } else {
+                    Err(())
+                }
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+fn evaluate_binary_expression_literal(
+    m: &Binding,
+    n: &Binding,
+    op: &Operation,
+) -> Result<Binding, ()> {
+    match (m, n) {
+        (Binding::Literal(LiteralType::Number(a)), Binding::Literal(LiteralType::Number(b))) => {
+            match op {
+                Operation::GT => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
+                Operation::LT => Ok(Binding::Literal(LiteralType::Boolean(a < b))),
+                Operation::GE => Ok(Binding::Literal(LiteralType::Boolean(a >= b))),
+                Operation::LE => Ok(Binding::Literal(LiteralType::Boolean(a <= b))),
+                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
+                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                Operation::PLUS => Ok(Binding::Literal(LiteralType::Number(a + b))),
+                Operation::MINUS => Ok(Binding::Literal(LiteralType::Number(a - b))),
+                Operation::MULTIPLY => Ok(Binding::Literal(LiteralType::Number(a * b))),
+                Operation::DIVIDE => Ok(Binding::Literal(LiteralType::Number(a / b))),
+            }
+        }
+        (Binding::Literal(LiteralType::Boolean(a)), Binding::Literal(LiteralType::Boolean(b))) => {
+            match op {
+                Operation::GT => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
+                Operation::LT => Ok(Binding::Literal(LiteralType::Boolean(a < b))),
+                Operation::GE => Ok(Binding::Literal(LiteralType::Boolean(a >= b))),
+                Operation::LE => Ok(Binding::Literal(LiteralType::Boolean(a <= b))),
+                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
+                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                _ => Err(()),
+            }
+        }
+        _ => Err(()),
+    }
+}
+
 impl Evaluate for Factor {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self {
@@ -186,8 +249,12 @@ impl Evaluate for Factor {
             Factor::CallExpression(_) => {
                 unimplemented!() // TODO
             }
-            Factor::NumberLiteral(literal) => Ok(Binding::Literal(LiteralType::Number(literal.value))),
-            Factor::BooleanLiteral(literal) => Ok(Binding::Literal(LiteralType::Boolean(literal.value))),
+            Factor::NumberLiteral(literal) => {
+                Ok(Binding::Literal(LiteralType::Number(literal.value)))
+            }
+            Factor::BooleanLiteral(literal) => {
+                Ok(Binding::Literal(LiteralType::Boolean(literal.value)))
+            }
         }
     }
 }
