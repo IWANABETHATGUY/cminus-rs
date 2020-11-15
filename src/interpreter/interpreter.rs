@@ -147,9 +147,7 @@ impl Evaluate for Expression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self {
             Expression::Assignment(assignment) => assignment.evaluate(env),
-            Expression::BinaryExpression(binary_expr) => {
-                binary_expr.evaluate(env)
-            }
+            Expression::BinaryExpression(binary_expr) => binary_expr.evaluate(env),
             Expression::Factor(factor) => factor.evaluate(env),
         }
     }
@@ -240,12 +238,13 @@ fn evaluate_binary_expression_literal(
 impl Evaluate for Factor {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self {
-            Factor::Expression(_) => {
-                unimplemented!() // TODO
+            Factor::Expression(expr) => {
+                expr.evaluate(env)
             }
-            Factor::Var(_) => {
-                unimplemented!() // TODO
-            }
+            Factor::Var(var) => env
+                .get(&var.id.value)
+                .and_then(|bind| Some(bind.clone()))
+                .ok_or_else(|| {}),
             Factor::CallExpression(_) => {
                 unimplemented!() // TODO
             }

@@ -1,4 +1,10 @@
 void main() {
   int a;
-  a = 3 + 2 * a + 7;
+  int c;
+  int d;
+  bool e;
+  a = (3 + 2) * (1 / 2);
+  c = a * 2 + 3;
+  d = c * 2 / 2;
+    e = a > c;
 }
