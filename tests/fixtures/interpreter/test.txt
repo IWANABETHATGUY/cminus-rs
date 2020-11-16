@@ -1,10 +1,13 @@
 int fibonacci(int a) {
   if (a == 1) {
     return 1;
-  } 
-  return fibonacci(a - 1) + 1;
+  }
+  if (a == 2) {
+    return 1;
+  }
+  return fibonacci(a - 1) + fibonacci(a - 2);
 }
 void main() {
   int a;
-  a = fibonacci(3);
+  a = fibonacci(20);
 }

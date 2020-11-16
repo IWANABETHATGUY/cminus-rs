@@ -274,8 +274,8 @@ fn evaluate_binary_expression_literal(
                 Operation::LT => Ok(Binding::Literal(LiteralType::Boolean(a < b))),
                 Operation::GE => Ok(Binding::Literal(LiteralType::Boolean(a >= b))),
                 Operation::LE => Ok(Binding::Literal(LiteralType::Boolean(a <= b))),
-                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
-                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a != b))),
                 Operation::PLUS => Ok(Binding::Literal(LiteralType::Number(a + b))),
                 Operation::MINUS => Ok(Binding::Literal(LiteralType::Number(a - b))),
                 Operation::MULTIPLY => Ok(Binding::Literal(LiteralType::Number(a * b))),
@@ -288,8 +288,8 @@ fn evaluate_binary_expression_literal(
                 Operation::LT => Ok(Binding::Literal(LiteralType::Boolean(a < b))),
                 Operation::GE => Ok(Binding::Literal(LiteralType::Boolean(a >= b))),
                 Operation::LE => Ok(Binding::Literal(LiteralType::Boolean(a <= b))),
-                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a > b))),
-                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                Operation::EQ => Ok(Binding::Literal(LiteralType::Boolean(a == b))),
+                Operation::NE => Ok(Binding::Literal(LiteralType::Boolean(a != b))),
                 _ => Err(()),
             }
         }
