@@ -77,6 +77,7 @@ type Scope = HashMap<String, Binding>;
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
     pub(crate) call_expression_binding: Scope,
+    pub(crate) std_io: bool
 }
 
 impl Environment {

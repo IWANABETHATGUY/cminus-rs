@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use crate::parser::ast::*;
 
@@ -92,7 +92,6 @@ impl Evaluate for VarDeclaration {
                 }
             }
         }
-        // scope.insert(var.id.value.clone(), Binding::Void);
         Ok(Binding::Void)
     }
 }
@@ -337,7 +336,6 @@ impl Evaluate for Factor {
         }
     }
 }
-
 impl Evaluate for CallExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         let func_name = &self.id.value;
@@ -366,7 +364,7 @@ impl Evaluate for CallExpression {
         if let Binding::FunctionDeclaration(decl) = func_decl {
             let decl = decl.clone();
             let call_expression_scope =
-                prepare_call_expression_binding(env, &decl.params.clone(), &self.arguments)?;
+                prepare_call_expression_binding(env, &decl.params, &self.arguments)?;
             env.call_expression_binding = call_expression_scope;
             match decl.body.evaluate(env) {
                 Ok(Some(binding)) => {
