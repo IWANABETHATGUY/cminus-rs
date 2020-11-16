@@ -110,8 +110,26 @@ impl Statement {
                     Ok(None)
                 }
             }
-            Statement::SelectionStatement(_) => {
-                unimplemented!() // TODO
+            Statement::SelectionStatement(stmt) => {
+                if let Ok(binding) = stmt.test.evaluate(env) {
+                    match binding {
+                        Binding::Literal(LiteralType::Boolean(value)) => {
+                            if value {
+                                return stmt.consequent.evaluate(env);
+                            } else if let Some(alternative) = &stmt.alternative {
+                                return alternative.evaluate(env);
+                            } else {
+                                return Ok(None);
+                            }
+                        }
+                        _ => {
+                            println!("test expression should be an boolean expression");
+                            return Err(());
+                        }
+                    }
+                } else {
+                    return Err(());
+                };
             }
             Statement::IterationStatement(_) => {
                 unimplemented!() // TODO
@@ -162,12 +180,14 @@ impl CompoundStatement {
             }
             // decl.evaluate(env)?;
         }
+        let mut option_binding = None;
         for stat in self.statement_list.iter() {
             match stat.evaluate(env) {
                 Ok(binding) => {
-                    println!("{:?}", env.scope_stack.last());
-                    env.scope_stack.pop();
-                    return Ok(binding);
+                    if let Some(binding) = binding {
+                        option_binding = Some(binding);
+                        break;
+                    }
                 }
                 _ => {
                     env.scope_stack.pop();
@@ -175,8 +195,9 @@ impl CompoundStatement {
                 }
             }
         }
+        println!("{:?}", env.scope_stack.last());
         env.scope_stack.pop();
-        Ok(None)
+        Ok(option_binding)
     }
 }
 
