@@ -30,4 +30,5 @@ void main() {
   int a;
   a = 3;
   a = whiletest(100);
+  println(a);
 }

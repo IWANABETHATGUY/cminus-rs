@@ -25,6 +25,13 @@ impl Evaluate for Declaration {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self {
             Declaration::FunctionDeclaration(func) => {
+                // match func.id.value.as_ref() {
+                //     id @ "print"| id @"println"  => {
+                //         eprintln!("`{}` is built-in function, can't be redefined", id);
+                //         return Err(());
+                //     }
+                //     _ => {}
+                // }
                 env.define(
                     func.id.value.clone(),
                     Binding::FunctionDeclaration(std::rc::Rc::new(func.clone())),
@@ -210,7 +217,7 @@ impl CompoundStatement {
                 }
             }
         }
-        println!("{}:{:?}", env.scope_stack.len(), env.scope_stack.last());
+        // println!("{}:{:?}", env.scope_stack.len(), env.scope_stack.last());
         env.scope_stack.pop();
         Ok(option_binding)
     }
@@ -334,6 +341,27 @@ impl Evaluate for Factor {
 impl Evaluate for CallExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         let func_name = &self.id.value;
+        if func_name == "print" || func_name == "println" {
+            let binding_list = {
+                let mut vec = Vec::new();
+                for arg in &self.arguments {
+                    vec.push(arg.evaluate(env)?);
+                }
+                vec
+            };
+            match func_name.as_ref() {
+                "print" => {
+                    crate::interpreter::print(binding_list, env);
+                }
+                "println" => {
+                    crate::interpreter::println(binding_list, env);
+                }
+                _ => {
+                    unreachable!("only print and println");
+                }
+            }
+            return Ok(Binding::Void);
+        }
         let func_decl = env.get(func_name).ok_or_else(|| {})?;
         if let Binding::FunctionDeclaration(decl) = func_decl {
             let decl = decl.clone();
@@ -342,15 +370,12 @@ impl Evaluate for CallExpression {
             env.call_expression_binding = call_expression_scope;
             match decl.body.evaluate(env) {
                 Ok(Some(binding)) => {
-                    // env.scope_stack.pop();
                     return Ok(binding);
                 }
                 Err(_) => {
-                    // env.scope_stack.pop();
                     return Err(());
                 }
                 _ => {
-                    // env.scope_stack.pop();
                     return Ok(Binding::Void);
                 }
             }
