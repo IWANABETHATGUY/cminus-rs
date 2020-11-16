@@ -362,7 +362,7 @@ impl Evaluate for CallExpression {
             }
             return Ok(Binding::Void);
         }
-        let func_decl = env.get(func_name).ok_or_else(|| {})?;
+        let func_decl = env.get_func(func_name).ok_or_else(|| {})?;
         if let Binding::FunctionDeclaration(decl) = func_decl {
             let decl = decl.clone();
             let call_expression_scope =

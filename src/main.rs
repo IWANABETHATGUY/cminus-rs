@@ -5,7 +5,7 @@ mod parser;
 mod interpreter;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
-use std::{collections::HashMap, fs::read_to_string};
+use std::{collections::HashMap, time::Instant, fs::read_to_string};
 use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/interpreter/test.txt");
@@ -21,7 +21,9 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
+    let start = Instant::now();
     interpreter::interpret(&mut res);
+    println!("{:?}", start.elapsed());
     // parser.error_reporter.emit_std()?;
     // println!("{}", res.walk(0));
     Ok(())

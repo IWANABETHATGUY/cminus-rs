@@ -88,6 +88,13 @@ impl Environment {
         }
         None
     }
+
+    pub fn get_func(&self, name: &String) -> Option<&Binding> {
+        if let Some(binding) = self.scope_stack.first().unwrap().get(name) {
+            return Some(binding);
+        }
+        None
+    }
     pub fn get_mut(&mut self, name: &String) -> Option<&mut Binding> {
         for scope in self.scope_stack.iter_mut().rev() {
             if let Some(binding) = scope.get_mut(name) {
