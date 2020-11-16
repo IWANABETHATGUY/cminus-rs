@@ -1,5 +1,5 @@
 use crate::parser::ast::FunctionDeclaration;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
@@ -68,7 +68,7 @@ impl ArrayType {
 pub enum Binding {
     Literal(LiteralType),
     Array(ArrayType),
-    FunctionDeclaration(Box<FunctionDeclaration>),
+    FunctionDeclaration(Rc<FunctionDeclaration>),
     Variable(String),
     Void,
 }

@@ -15,7 +15,7 @@ pub fn interpret(program: &mut Program) -> Result<Binding, ()> {
     program.evaluate(&mut env)?;
     let func = if let Some(scope) = env.scope_stack.last() {
         match scope.get("main") {
-            Some(Binding::FunctionDeclaration(box func)) => func,
+            Some(Binding::FunctionDeclaration(func)) => func,
             _ => {
                 return Err(());
             }

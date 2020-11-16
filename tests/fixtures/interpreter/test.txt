@@ -1,10 +1,7 @@
+int test(int a, int b) {
+  return a + b + 1;
+}
 void main() {
   int a;
-  int c;
-  int d;
-  bool e;
-  a = (3 + 2) * (1 / 2);
-  c = a * 2 + 3;
-  d = c * 2 / 2;
-    e = a > c;
+  a = test(2, 3);
 }
