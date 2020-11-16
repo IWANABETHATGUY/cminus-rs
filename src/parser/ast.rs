@@ -234,18 +234,16 @@ impl Walk for SelectionStatement {
 #[derive(Debug, Clone)]
 pub struct IterationStatement {
     pub(crate) test: Expression,
-    pub(crate) body: Option<Box<Statement>>,
+    pub(crate) body: Box<Statement>,
 }
 
 impl Walk for IterationStatement {
     fn walk(&self, level: usize) -> String {
         let ast = format!("{}IterationStatement\n", " ".repeat(2 * level));
         let mut children = vec![self.test.walk(level + 1)];
-        if let Some(ref body) = self.body {
-            let body_ast_string = body.walk(level + 1);
-            if !body_ast_string.is_empty() {
-                children.push(body_ast_string);
-            }
+        let body_ast_string = self.body.walk(level + 1);
+        if !body_ast_string.is_empty() {
+            children.push(body_ast_string);
         }
         ast + &children.join("\n")
     }
@@ -361,7 +359,7 @@ pub enum Factor {
     Var(Var),
     CallExpression(CallExpression),
     NumberLiteral(NumberLiteral),
-    BooleanLiteral(BooleanLiteral)
+    BooleanLiteral(BooleanLiteral),
 }
 
 impl Walk for Factor {
@@ -371,7 +369,7 @@ impl Walk for Factor {
             Factor::Var(var) => var.walk(level),
             Factor::CallExpression(call) => call.walk(level),
             Factor::NumberLiteral(num) => num.walk(level),
-            Factor::BooleanLiteral(boolean) => boolean.walk(level)
+            Factor::BooleanLiteral(boolean) => boolean.walk(level),
         }
     }
 }

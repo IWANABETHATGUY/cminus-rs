@@ -9,7 +9,6 @@ pub trait Evaluate {
 
 impl Evaluate for Program {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
-        println!("{}", self.declarations.len());
         for decl in self.declarations.iter() {
             match decl.evaluate(env) {
                 Ok(_) => {}
@@ -24,16 +23,8 @@ impl Evaluate for Program {
 
 impl Evaluate for Declaration {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
-        // let scope = env.scope_stack.last_mut().ok_or_else(|| {
-        //     // TODO: ...
-        // })?;
         match self {
             Declaration::FunctionDeclaration(func) => {
-                // if scope.contains_key(&func.id.value) {
-                //     // TODO: ...
-                //     return Err(());
-                // }
-
                 env.define(
                     func.id.value.clone(),
                     Binding::FunctionDeclaration(std::rc::Rc::new(func.clone())),
@@ -131,8 +122,32 @@ impl Statement {
                     return Err(());
                 };
             }
-            Statement::IterationStatement(_) => {
-                unimplemented!() // TODO
+            Statement::IterationStatement(stmt) => {
+                while let Ok(binding) = stmt.test.evaluate(env) {
+                    match binding {
+                        Binding::Literal(LiteralType::Boolean(value)) => {
+                            if value {
+                                match stmt.body.evaluate(env) {
+                                    Ok(option_binding) => {
+                                        if let Some(binding) = option_binding {
+                                            return Ok(Some(binding));
+                                        }
+                                    }
+                                    Err(_) => {
+                                        return Err(());
+                                    }
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        _ => {
+                            println!("while test expression should be an boolean expression");
+                            return Err(());
+                        }
+                    }
+                }
+                Ok(None)
             }
             Statement::ReturnStatement(stmt) => {
                 if let Ok(binding) = stmt.evaluate(env) {
@@ -195,7 +210,7 @@ impl CompoundStatement {
                 }
             }
         }
-        println!("{:?}", env.scope_stack.last());
+        println!("{}:{:?}", env.scope_stack.len(), env.scope_stack.last());
         env.scope_stack.pop();
         Ok(option_binding)
     }
