@@ -1,5 +1,5 @@
 pub mod parse;
 pub mod error;
-mod walk;
+pub(crate) mod ast;
 
-pub use walk::Walk;
+pub use ast::Walk;

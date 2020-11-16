@@ -1,7 +1,7 @@
 use crate::{
     error_emit::ErrorReporter,
     lexer::token::{KeywordType, Token, TokenType},
-    parser::walk::*,
+    parser::ast::*,
 };
 
 pub struct Parser<'a> {
@@ -294,7 +294,7 @@ impl<'a> Parser<'a> {
     fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
         self.match_and_consume(TokenType::Keyword(KeywordType::WHILE), true)?;
         let expression = self.parse_expression()?;
-        let body = Some(Box::new(self.parse_statement()?));
+        let body = Box::new(self.parse_statement()?);
         Ok(IterationStatement {
             test: expression,
             body,
