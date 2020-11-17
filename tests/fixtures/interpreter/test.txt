@@ -5,7 +5,5 @@ int fibonacci(int a) {
   return fibonacci(a - 1) + fibonacci(a - 2);
 }
 void main() {
-  int a;
-  a = 3;
-  a = fibonacci(10);
+  println(fibonacci(30));
 }

@@ -77,7 +77,8 @@ type Scope = HashMap<String, Binding>;
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
     pub(crate) call_expression_binding: Scope,
-    pub(crate) std_io: bool
+    pub(crate) std_io: bool,
+    pub(crate) std_simulator: Vec<String>,
 }
 
 impl Environment {
@@ -115,7 +116,9 @@ impl Environment {
         }
         Err(())
     }
-
+    pub fn get_std_simulator_string(&self) -> String {
+        format!("{}", self.std_simulator.join("\n"))
+    }
     // pub fn update(&mut self, name: &String) {
 
     // }
