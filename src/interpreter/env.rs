@@ -67,7 +67,8 @@ impl ArrayType {
 }
 #[derive(Debug, Clone)]
 pub enum Binding {
-    Literal(LiteralType),
+    NumberLiteral(i32),
+    BooleanLiteral(bool),
     Array(ArrayType),
     FunctionDeclaration(Rc<FunctionDeclaration>),
     Variable(String),

@@ -1,4 +1,5 @@
 #![feature(box_patterns)]
+#![feature(or_patterns)]
 mod error_emit;
 mod interpreter;
 mod lexer;

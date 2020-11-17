@@ -9,3 +9,15 @@ edition = "2018"
 [dependencies]
 codespan-reporting = "0.9"
 hashbrown = "0.9"
+
+[dev-dependencies]
+criterion = "0.3.3"
+
+
+[[bench]]
+name = "recursive"
+harness = false
+
+
+[profile.release]
+debug = true

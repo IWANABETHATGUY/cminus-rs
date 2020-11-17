@@ -36,10 +36,10 @@ pub(crate) fn print(binding_list: Vec<Binding>, env: &mut Environment) {
     let mut string_list = vec![];
     for binding in binding_list {
         let string = match binding {
-            Binding::Literal(LiteralType::Boolean(val)) => {
+            Binding::BooleanLiteral(val) => {
                 format!("{}", val)
             }
-            Binding::Literal(LiteralType::Number(val)) => {
+            Binding::NumberLiteral(val) => {
                 format!("{}", val)
             }
             Binding::Array(env::ArrayType::Boolean { array, .. }) => {
@@ -75,10 +75,10 @@ pub(crate) fn println(binding_list: Vec<Binding>, env: &mut Environment) {
     let mut string_list = vec![];
     for binding in binding_list {
         let arg_string = match binding {
-            Binding::Literal(LiteralType::Boolean(val)) => {
+            Binding::NumberLiteral(val) => {
                 format!("{}", val)
             }
-            Binding::Literal(LiteralType::Number(val)) => {
+            Binding::BooleanLiteral(val) => {
                 format!("{}", val)
             }
             Binding::Array(env::ArrayType::Boolean { array, .. }) => {
