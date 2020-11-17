@@ -1,9 +1,7 @@
-use hashbrown::HashMap;
-use std::time::Instant;
-
+use fxhash::FxHashMap;
 use crate::parser::ast::*;
 
-use super::env::{ArrayType, Binding, Environment, LiteralType};
+use super::env::{ArrayType, Binding, Environment};
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -194,7 +192,7 @@ impl CompoundStatement {
         // before every callExpression we add the binding to env.call_expression_binging, after every compoundStatement we
         // extend the params binding and clear the env.call_expression binding
         let scope = {
-            let mut map = HashMap::new();
+            let mut map = FxHashMap::default();
             while let Some((string, binding)) = env.call_expression_binding.pop() {
                 map.insert(string, binding);
             }
@@ -387,7 +385,7 @@ impl Evaluate for CallExpression {
         }
     }
 }
-
+#[inline(always)]
 fn prepare_call_expression_binding(
     env: &mut Environment,
     params: &Params,
@@ -413,7 +411,7 @@ fn prepare_call_expression_binding(
         }
     }
 }
-
+#[inline(always)]
 fn generate_assignable_binding(
     env: &mut Environment,
     param: &Parameter,

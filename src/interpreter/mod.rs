@@ -1,4 +1,3 @@
-use hashbrown::HashMap;
 use crate::parser::ast::*;
 
 use self::{
@@ -12,7 +11,7 @@ mod interpreter;
 
 pub fn interpret(program: &mut Program, std_io: bool) -> Result<Environment, ()> {
     let mut env = env::Environment {
-        scope_stack: vec![HashMap::new()],
+        scope_stack: vec![fxhash::FxHashMap::default()],
         call_expression_binding: Vec::new(),
         std_io,
         std_simulator: vec![],

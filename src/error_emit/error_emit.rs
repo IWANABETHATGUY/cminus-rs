@@ -7,11 +7,12 @@ use codespan_reporting::{
         termcolor::{Buffer, StandardStream},
     },
 };
-use hashbrown::HashMap;
+use fxhash::FxHashMap;
+
 use std::ops::Range;
 pub struct ErrorReporter<'a> {
     files: SimpleFiles<&'a str, String>,
-    file_name_id_map: HashMap<String, usize>,
+    file_name_id_map: FxHashMap<String, usize>,
     diagnostic: Diagnostic<usize>,
 }
 
@@ -20,7 +21,7 @@ impl<'a> ErrorReporter<'a> {
         ErrorReporter {
             files: SimpleFiles::new(),
             diagnostic: Diagnostic::error(),
-            file_name_id_map: HashMap::new(),
+            file_name_id_map: FxHashMap::default(),
         }
     }
 

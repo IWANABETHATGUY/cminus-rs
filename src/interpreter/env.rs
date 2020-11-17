@@ -1,5 +1,5 @@
 use crate::parser::ast::FunctionDeclaration;
-use hashbrown::HashMap;
+use fxhash::FxHashMap;
 use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub enum LiteralType {
@@ -74,7 +74,7 @@ pub enum Binding {
     Variable(String),
     Void,
 }
-type Scope = HashMap<String, Binding>;
+type Scope = FxHashMap<String, Binding>;
 #[derive(Debug)]
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
