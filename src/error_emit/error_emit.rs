@@ -7,8 +7,8 @@ use codespan_reporting::{
         termcolor::{Buffer, StandardStream},
     },
 };
-use std::{collections::HashMap, ops::Range};
-
+use hashbrown::HashMap;
+use std::ops::Range;
 pub struct ErrorReporter<'a> {
     files: SimpleFiles<&'a str, String>,
     file_name_id_map: HashMap<String, usize>,

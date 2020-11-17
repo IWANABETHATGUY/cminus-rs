@@ -1,11 +1,13 @@
 #![feature(box_patterns)]
 mod error_emit;
+mod interpreter;
 mod lexer;
 mod parser;
-mod interpreter;
+use hashbrown::HashMap;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
-use std::{collections::HashMap, time::Instant, fs::read_to_string};
+use std::{fs::read_to_string, time::Instant};
+
 use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/interpreter/test.txt");
@@ -24,10 +26,10 @@ fn main() -> Result<(), std::io::Error> {
     let start = Instant::now();
     match interpreter::interpret(&mut res, false) {
         Ok(env) => {
-            println!("{}", env.get_std_simulator_string()); 
+            println!("{}", env.get_std_simulator_string());
         }
         Err(_) => {
-            println!("interpreter error", );
+            println!("interpreter error",);
         }
     };
     println!("total: {:?}", start.elapsed());

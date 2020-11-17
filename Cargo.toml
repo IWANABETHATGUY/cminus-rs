@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 codespan-reporting = "0.9"
-unindent = "0.1"
+hashbrown = "0.9"

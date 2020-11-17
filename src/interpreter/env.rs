@@ -1,5 +1,6 @@
 use crate::parser::ast::FunctionDeclaration;
-use std::{collections::HashMap, rc::Rc};
+use hashbrown::HashMap;
+use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
@@ -76,7 +77,7 @@ type Scope = HashMap<String, Binding>;
 #[derive(Debug)]
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
-    pub(crate) call_expression_binding: Scope,
+    pub(crate) call_expression_binding: Vec<(String, Binding)>,
     pub(crate) std_io: bool,
     pub(crate) std_simulator: Vec<String>,
 }

@@ -1,4 +1,5 @@
-use std::{collections::HashMap, time::Instant};
+use std::time::Instant;
+use hashbrown::HashMap;
 
 use crate::parser::ast::*;
 
@@ -192,9 +193,14 @@ impl CompoundStatement {
     pub fn evaluate(&self, env: &mut Environment) -> Result<Option<Binding>, ()> {
         // before every callExpression we add the binding to env.call_expression_binging, after every compoundStatement we
         // extend the params binding and clear the env.call_expression binding
-        let scope = HashMap::from(env.call_expression_binding.clone());
+        let scope = {
+            let mut map = HashMap::new();
+            while let Some((string, binding)) = env.call_expression_binding.pop() {
+                map.insert(string, binding);
+            }
+            map
+        };
         env.scope_stack.push(scope);
-        env.call_expression_binding.clear();
         for decl in self.local_declaration.iter() {
             if let Err(_) = decl.evaluate(env) {
                 return Err(());
@@ -387,24 +393,24 @@ fn prepare_call_expression_binding(
     env: &mut Environment,
     params: &Params,
     arguments: &Vec<Expression>,
-) -> Result<HashMap<String, Binding>, ()> {
+) -> Result<Vec<(String, Binding)>, ()> {
     match params {
         Params::Void => {
             if arguments.len() != 0 {
                 return Err(());
             }
-            return Ok(HashMap::new());
+            return Ok(Vec::new());
         }
         Params::ParamsList { params } => {
             if params.len() != arguments.len() {
                 return Err(());
             }
-            let mut map = HashMap::new();
+            let mut array = Vec::new();
             for (param, arg) in params.iter().zip(arguments.iter()) {
                 let binding = generate_assignable_binding(env, param, arg)?;
-                map.insert(param.id.value.clone(), binding);
+                array.push((param.id.value.clone(), binding));
             }
-            Ok(map)
+            Ok(array)
         }
     }
 }
