@@ -22,7 +22,14 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     let start = Instant::now();
-    interpreter::interpret(&mut res, false);
+    match interpreter::interpret(&mut res, false) {
+        Ok(env) => {
+            println!("{}", env.get_std_simulator_string()); 
+        }
+        Err(_) => {
+            println!("interpreter error", );
+        }
+    };
     println!("total: {:?}", start.elapsed());
     // parser.error_reporter.emit_std()?;
     // println!("{}", res.walk(0));

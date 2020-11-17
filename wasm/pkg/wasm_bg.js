@@ -122,3 +122,23 @@ export function tokenize(source_code) {
     }
 }
 
+/**
+* @param {string} source_code
+* @returns {string}
+*/
+export function interpret(source_code) {
+    try {
+        const retptr = wasm.__wbindgen_export_0.value - 16;
+        wasm.__wbindgen_export_0.value = retptr;
+        var ptr0 = passStringToWasm0(source_code, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.interpret(retptr, ptr0, len0);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_export_0.value += 16;
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
+
