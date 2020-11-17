@@ -366,9 +366,7 @@ impl Evaluate for CallExpression {
         let func_decl = env.get_func(func_name).ok_or_else(|| {})?;
         if let Binding::FunctionDeclaration(decl) = func_decl {
             let decl = decl.clone();
-            let call_expression_scope =
-                prepare_call_expression_binding(env, &decl.params, &self.arguments)?;
-            env.call_expression_binding = call_expression_scope;
+            env.call_expression_binding = prepare_call_expression_binding(env, &decl.params, &self.arguments)?;
             match decl.body.evaluate(env) {
                 Ok(Some(binding)) => {
                     return Ok(binding);
@@ -398,8 +396,7 @@ fn prepare_call_expression_binding(
             }
             let mut array = Vec::new();
             for (param, arg) in params.iter().zip(arguments.iter()) {
-                let binding = generate_assignable_binding(env, param, arg)?;
-                array.push((param.id.value.clone(), binding));
+                array.push((param.id.value.clone(), generate_assignable_binding(env, param, arg)?));
             }
             Ok(array)
         }
