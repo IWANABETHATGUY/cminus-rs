@@ -4,9 +4,8 @@ mod error_emit;
 mod interpreter;
 mod lexer;
 mod parser;
-use hashbrown::HashMap;
 use lexer::lex::Lexer;
-use parser::{parse::Parser, Walk};
+use parser::parse::Parser;
 use std::{fs::read_to_string, time::Instant};
 
 use std::path;

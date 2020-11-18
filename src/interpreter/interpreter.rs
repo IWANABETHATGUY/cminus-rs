@@ -291,7 +291,7 @@ fn evaluate_binary_expression_literal(
     op: &Operation,
 ) -> Result<Binding, ()> {
     match (m, n) {
-        (Binding::NumberLiteral((a)), Binding::NumberLiteral((b))) => {
+        (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => {
             match op {
                 Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
                 Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
