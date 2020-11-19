@@ -198,7 +198,6 @@ impl CompoundStatement {
             map
         };
         let mut is_empty_env = true;
-        println!("{:?}", env.scope_stack.len());
         for decl in self.local_declaration.iter() {
             if let Err(_) = decl.evaluate(&mut scope) {
                 return Err(());
