@@ -1,7 +1,7 @@
-use fxhash::FxHashMap;
 use crate::parser::ast::*;
+use fxhash::FxHashMap;
 
-use super::env::{ArrayType, Binding, Environment};
+use super::env::{ArrayType, Binding, Environment, Scope};
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -37,60 +37,59 @@ impl Evaluate for Declaration {
                 );
             }
             Declaration::VarDeclaration(var) => {
-                var.evaluate(env)?;
+                var.evaluate(env.scope_stack.last_mut().unwrap())?;
             }
         }
         Ok(Binding::Void)
     }
 }
 
-impl Evaluate for VarDeclaration {
-    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
-        if let Some(ref num) = self.num {
-            // TODO: check the number value is usize
-            let length = num.value as usize;
-            match self.type_specifier.kind {
-                TypeSpecifierKind::Int => {
-                    env.define(
-                        self.id.value.clone(),
-                        Binding::Array(ArrayType::Number {
-                            length,
-                            array: vec![0; length],
-                        }),
-                    );
-                }
-                TypeSpecifierKind::Boolean => {
-                    env.define(
-                        self.id.value.clone(),
-                        Binding::Array(ArrayType::Boolean {
-                            length,
-                            array: vec![false; length],
-                        }),
-                    );
-                }
-                _ => {
-                    return Err(());
-                }
-            }
+impl VarDeclaration {
+    fn evaluate(&self, local_scope: &mut Scope) -> Result<Binding, ()> {
+        if local_scope.contains_key(&self.id.value) {
+            return Err(());
         } else {
-            match self.type_specifier.kind {
-                TypeSpecifierKind::Int => {
-                    env.define(
-                        self.id.value.clone(),
-                        Binding::NumberLiteral(0),
-                    );
-                }
-                TypeSpecifierKind::Void => {
-                    env.define(self.id.value.clone(), Binding::Void);
-                }
-                TypeSpecifierKind::Boolean => {
-                    env.define(
-                        self.id.value.clone(),
-                        Binding::BooleanLiteral(false),
-                    );
+            match self.num {
+                None => match self.type_specifier.kind {
+                    TypeSpecifierKind::Int => {
+                        local_scope.insert(self.id.value.clone(), Binding::NumberLiteral(0));
+                    }
+                    TypeSpecifierKind::Boolean => {
+                        local_scope.insert(self.id.value.clone(), Binding::BooleanLiteral(false));
+                    }
+                    TypeSpecifierKind::Void => {
+                        local_scope.insert(self.id.value.clone(), Binding::Void);
+                    }
+                },
+                Some(ref num) => {
+                    let length = num.value as usize;
+                    match self.type_specifier.kind {
+                        TypeSpecifierKind::Int => {
+                            local_scope.insert(
+                                self.id.value.clone(),
+                                Binding::Array(ArrayType::Number {
+                                    length,
+                                    array: vec![0; length],
+                                }),
+                            );
+                        }
+                        TypeSpecifierKind::Boolean => {
+                            local_scope.insert(
+                                self.id.value.clone(),
+                                Binding::Array(ArrayType::Boolean {
+                                    length,
+                                    array: vec![false; length],
+                                }),
+                            );
+                        }
+                        _ => {
+                            return Err(());
+                        }
+                    }
                 }
             }
         }
+
         Ok(Binding::Void)
     }
 }
@@ -191,18 +190,23 @@ impl CompoundStatement {
     pub fn evaluate(&self, env: &mut Environment) -> Result<Option<Binding>, ()> {
         // before every callExpression we add the binding to env.call_expression_binging, after every compoundStatement we
         // extend the params binding and clear the env.call_expression binding
-        let scope = {
+        let mut scope = {
             let mut map = FxHashMap::default();
             while let Some((string, binding)) = env.call_expression_binding.pop() {
                 map.insert(string, binding);
             }
             map
         };
-        env.scope_stack.push(scope);
+        let mut is_empty_env = true;
+        println!("{:?}", env.scope_stack.len());
         for decl in self.local_declaration.iter() {
-            if let Err(_) = decl.evaluate(env) {
+            if let Err(_) = decl.evaluate(&mut scope) {
                 return Err(());
             }
+        }
+        if scope.len() != 0 {
+            is_empty_env = false;
+            env.scope_stack.push(scope);
         }
         let mut option_binding = None;
         for stat in self.statement_list.iter() {
@@ -219,7 +223,9 @@ impl CompoundStatement {
             }
         }
         // println!("{}:{:?}", env.scope_stack.len(), env.scope_stack.last());
-        env.scope_stack.pop();
+        if !is_empty_env {
+            env.scope_stack.pop();
+        }
         Ok(option_binding)
     }
 }
@@ -258,22 +264,26 @@ impl Evaluate for BinaryExpression {
         let left_eval = &self.left.evaluate(env)?;
         let right_eval = &self.right.evaluate(env)?;
         match (left_eval, right_eval) {
+            (Binding::NumberLiteral(_), Binding::NumberLiteral(_)) => {
+                evaluate_binary_expression_literal(left_eval, right_eval, &self.operation)
+            }
+            (Binding::BooleanLiteral(_), Binding::BooleanLiteral(_)) => {
+                evaluate_binary_expression_literal(left_eval, right_eval, &self.operation)
+            }
             (
-                Binding::NumberLiteral(_),
-                Binding::NumberLiteral(_),
-            ) => evaluate_binary_expression_literal(left_eval, right_eval, &self.operation),
-            (
-                Binding::BooleanLiteral(_),
-                Binding::BooleanLiteral(_),
-            ) => evaluate_binary_expression_literal(left_eval, right_eval, &self.operation),
-            (left_eval @ Binding::NumberLiteral(_) | left_eval @ Binding::BooleanLiteral(_), Binding::Variable(var)) => {
+                left_eval @ Binding::NumberLiteral(_) | left_eval @ Binding::BooleanLiteral(_),
+                Binding::Variable(var),
+            ) => {
                 if let Some(right_var) = env.get(var) {
                     evaluate_binary_expression_literal(left_eval, right_var, &self.operation)
                 } else {
                     Err(())
                 }
             }
-            (Binding::Variable(var), right_eval @ Binding::NumberLiteral(_) | right_eval @ Binding::BooleanLiteral(_)) => {
+            (
+                Binding::Variable(var),
+                right_eval @ Binding::NumberLiteral(_) | right_eval @ Binding::BooleanLiteral(_),
+            ) => {
                 if let Some(left_var) = env.get(var) {
                     evaluate_binary_expression_literal(left_var, right_eval, &self.operation)
                 } else {
@@ -291,31 +301,27 @@ fn evaluate_binary_expression_literal(
     op: &Operation,
 ) -> Result<Binding, ()> {
     match (m, n) {
-        (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => {
-            match op {
-                Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
-                Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
-                Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
-                Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
-                Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
-                Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
-                Operation::PLUS => Ok(Binding::NumberLiteral(a + b)),
-                Operation::MINUS => Ok(Binding::NumberLiteral(a - b)),
-                Operation::MULTIPLY => Ok(Binding::NumberLiteral(a * b)),
-                Operation::DIVIDE => Ok(Binding::NumberLiteral(a / b)),
-            }
-        }
-        (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => {
-            match op {
-                Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
-                Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
-                Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
-                Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
-                Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
-                Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
-                _ => Err(()),
-            }
-        }
+        (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => match op {
+            Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
+            Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
+            Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
+            Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
+            Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
+            Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
+            Operation::PLUS => Ok(Binding::NumberLiteral(a + b)),
+            Operation::MINUS => Ok(Binding::NumberLiteral(a - b)),
+            Operation::MULTIPLY => Ok(Binding::NumberLiteral(a * b)),
+            Operation::DIVIDE => Ok(Binding::NumberLiteral(a / b)),
+        },
+        (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
+            Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
+            Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
+            Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
+            Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
+            Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
+            Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
+            _ => Err(()),
+        },
         _ => Err(()),
     }
 }
@@ -326,12 +332,8 @@ impl Evaluate for Factor {
             Factor::Expression(expr) => expr.evaluate(env),
 
             Factor::CallExpression(call_expr) => call_expr.evaluate(env),
-            Factor::NumberLiteral(literal) => {
-                Ok(Binding::NumberLiteral(literal.value))
-            }
-            Factor::BooleanLiteral(literal) => {
-                Ok(Binding::BooleanLiteral(literal.value))
-            }
+            Factor::NumberLiteral(literal) => Ok(Binding::NumberLiteral(literal.value)),
+            Factor::BooleanLiteral(literal) => Ok(Binding::BooleanLiteral(literal.value)),
             Factor::Var(var) => env
                 .get(&var.id.value)
                 .and_then(|bind| Some(bind.clone()))
@@ -366,7 +368,8 @@ impl Evaluate for CallExpression {
         let func_decl = env.get_func(func_name).ok_or_else(|| {})?;
         if let Binding::FunctionDeclaration(decl) = func_decl {
             let decl = decl.clone();
-            env.call_expression_binding = prepare_call_expression_binding(env, &decl.params, &self.arguments)?;
+            env.call_expression_binding =
+                prepare_call_expression_binding(env, &decl.params, &self.arguments)?;
             match decl.body.evaluate(env) {
                 Ok(Some(binding)) => {
                     return Ok(binding);
@@ -396,7 +399,10 @@ fn prepare_call_expression_binding(
             }
             let mut array = Vec::new();
             for (param, arg) in params.iter().zip(arguments.iter()) {
-                array.push((param.id.value.clone(), generate_assignable_binding(env, param, arg)?));
+                array.push((
+                    param.id.value.clone(),
+                    generate_assignable_binding(env, param, arg)?,
+                ));
             }
             Ok(array)
         }
@@ -418,9 +424,7 @@ fn generate_assignable_binding(
         let arg_binding = arg.evaluate(env)?;
         match (&param.type_specifier.kind, &arg_binding) {
             (TypeSpecifierKind::Int, Binding::NumberLiteral(_)) => Ok(arg_binding),
-            (TypeSpecifierKind::Boolean, Binding::BooleanLiteral(_)) => {
-                Ok(arg_binding)
-            }
+            (TypeSpecifierKind::Boolean, Binding::BooleanLiteral(_)) => Ok(arg_binding),
             (TypeSpecifierKind::Void, Binding::Void) => Ok(arg_binding),
             _ => Err(()),
         }

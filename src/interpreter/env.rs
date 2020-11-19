@@ -74,7 +74,7 @@ pub enum Binding {
     Variable(String),
     Void,
 }
-type Scope = FxHashMap<String, Binding>;
+pub type Scope = FxHashMap<String, Binding>;
 #[derive(Debug)]
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
