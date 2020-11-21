@@ -1,7 +1,7 @@
-use std::{path, fs::read_to_string};
+use std::{fs::read_to_string, path};
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use tinylang_rs::{lexer::lex::Lexer, interpreter, parser::{self, parse::Parser}};
+use criterion::{criterion_group, criterion_main, Criterion};
+use tinylang_rs::{interpreter, lexer::lex::Lexer, parser::parse::Parser};
 fn criterion_benchmark(c: &mut Criterion) {
     let path = path::Path::new("benches/corpus/fibonacci.cm");
     let source_code = read_to_string(path).unwrap();
@@ -16,9 +16,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             panic!("error when parsing");
         }
     };
-    c.bench_function("fib 20", |b| b.iter(|| {
-        interpreter::interpret(&mut res, false)
-    }));
+    c.bench_function("fib 20", |b| {
+        b.iter(|| interpreter::interpret(&mut res, false))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

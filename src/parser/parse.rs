@@ -124,29 +124,10 @@ impl<'a> Parser<'a> {
             let declaration = self.parse_declaration()?;
             declarations.push(declaration);
         }
-        if let Err(()) = Self::check_main_function_declaration(&declarations) {
-            self.error_reporter.add_diagnostic(
-                "main.cm",
-                self.get_source_file_end_range(),
-                "the last declaration of the program must be main".into(),
-            );
-            return Err(());
-        }
+        
         Ok(Program { declarations })
     }
 
-    fn check_main_function_declaration(declarations: &Vec<Declaration>) -> Result<(), ()> {
-        match declarations.last() {
-            Some(Declaration::FunctionDeclaration(func)) => {
-                match &func.id {
-                    Identifier { value } if value == "main" => return Ok(()),
-                    _ => {}
-                }
-                Err(())
-            }
-            _ => Err(()),
-        }
-    }
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_type_specifier() {
             self.consume(1);

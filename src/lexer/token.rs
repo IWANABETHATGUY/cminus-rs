@@ -63,10 +63,10 @@ pub struct Token {
     pub start_index: usize,
     pub end_index: usize,
 }
-pub struct Range {
-    pub start: Position,
-    pub end: Position,
-}
+// pub struct Range {
+//     pub start: Position,
+//     pub end: Position,
+// }
 impl Token {
     pub fn new(
         token_type: TokenType,

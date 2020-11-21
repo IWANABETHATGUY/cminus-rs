@@ -24,7 +24,6 @@ mod test_lex {
     use tinylang_rs::lexer::token::{Position, TokenType};
     use tinylang_rs::{
         lexer::{lex::Lexer, token::KeywordType},
-        T,
     };
     #[test]
     fn test_lex_meaningless() -> Result<(), std::io::Error> {

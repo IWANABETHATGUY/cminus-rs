@@ -20,7 +20,7 @@ impl ArrayType {
                 length,
                 array: value,
             } => {
-                if i >= *length || i < 0 {
+                if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     Ok(LiteralType::Boolean(value[i]))
@@ -30,7 +30,7 @@ impl ArrayType {
                 length,
                 array: value,
             } => {
-                if i >= *length || i < 0 {
+                if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     Ok(LiteralType::Number(value[i]))
@@ -42,7 +42,7 @@ impl ArrayType {
     pub fn set(&mut self, i: usize, data: LiteralType) -> Result<(), String> {
         match self {
             ArrayType::Boolean { length, array } if matches!(data, LiteralType::Boolean(_)) => {
-                if i >= *length || i < 0 {
+                if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     if let LiteralType::Boolean(v) = data {
@@ -52,7 +52,7 @@ impl ArrayType {
                 }
             }
             ArrayType::Number { length, array } if matches!(data, LiteralType::Number(_)) => {
-                if i >= *length || i < 0 {
+                if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     if let LiteralType::Number(v) = data {
