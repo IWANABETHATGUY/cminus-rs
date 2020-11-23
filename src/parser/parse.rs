@@ -124,17 +124,19 @@ impl<'a> Parser<'a> {
             let declaration = self.parse_declaration()?;
             declarations.push(declaration);
         }
-        
         Ok(Program { declarations })
     }
 
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_type_specifier() {
             self.consume(1);
+        } else {
+            let range = self.next_token().ok_or_else(||())?.range();
+            self.error_reporter
+                .add_diagnostic("main.cm", range, format!("expected `int` , `bool` or `void` , found {:?}", self.next_token().unwrap().token_type));
+            return Err(());
         }
-        if self.match_token(TokenType::Id) {
-            self.consume(1);
-        }
+        self.match_and_consume(TokenType::Id, true)?;
         if self.match_token(TokenType::Lparen) {
             self.backtrack(2);
             return self.parse_function_declaration();
