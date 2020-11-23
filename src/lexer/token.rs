@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Copy, Debug, Clone, Eq, PartialEq)]
 pub enum KeywordType {
     IF,
@@ -6,7 +8,7 @@ pub enum KeywordType {
     RETURN,
     VOID,
     WHILE,
-    BOOL
+    BOOL,
 }
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TokenType {
@@ -39,6 +41,56 @@ pub enum TokenType {
     Rbrace, // }
     Comment,
     Assign,
+}
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let string = match self {
+            TokenType::Error => {
+                "`error`"
+            }
+            TokenType::Id => {
+                "id"
+            }
+            TokenType::NumberLiteral => {
+                "numberLiteral"
+            }
+            TokenType::BooleanLiteral => {
+                "booleanLiteral"
+            }
+            TokenType::Keyword(k) => {
+                match k {
+                    KeywordType::IF => "if",
+                    KeywordType::ELSE => "else",
+                    KeywordType::INT => "int",
+                    KeywordType::RETURN => "return",
+                    KeywordType::VOID => "void",
+                    KeywordType::WHILE => "while",
+                    KeywordType::BOOL => "bool",
+                }
+            }
+            TokenType::Plus => "`+`",
+            TokenType::Minus => {"`-`"}
+            TokenType::Multiply => {"`*`"}
+            TokenType::Times => {"`/`"}
+            TokenType::Lt => {"`<`"}
+            TokenType::Le => {"`<=`"}
+            TokenType::Gt => {"`>`"}
+            TokenType::Ge => {"`>=`"}
+            TokenType::Eq => {"`==`"}
+            TokenType::Ne => {"`!=`"}
+            TokenType::Semi => {"`;`"}
+            TokenType::Comma => {"`,`"}
+            TokenType::Lparen => {"`(`"}
+            TokenType::Rparen => {"`)`"}
+            TokenType::Lbrack => {"`[`"}
+            TokenType::Rbrack => {"`]`"}
+            TokenType::Lbrace => {"`{`"}
+            TokenType::Rbrace => {"`}`"}
+            TokenType::Comment => {"comment"}
+            TokenType::Assign => {"`=`"}
+        };
+        f.write_str(string)
+    }
 }
 //left close, right open
 #[derive(PartialEq, Eq, Debug, Clone)]

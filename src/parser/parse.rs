@@ -94,7 +94,7 @@ impl<'a> Parser<'a> {
                 self.error_reporter.add_diagnostic(
                     "main.cm",
                     range,
-                    format!("expected {:?}, found none", token_type),
+                    format!("expected {}, found none", token_type),
                 );
             }
             return Err(());
@@ -108,7 +108,7 @@ impl<'a> Parser<'a> {
                 self.error_reporter.add_diagnostic(
                     "main.cm",
                     token.range(),
-                    format!("expected {:?}, found {:?}", token_type, token.token_type),
+                    format!("expected {}, found {}", token_type, token.token_type),
                 );
             }
             return Err(());
@@ -133,7 +133,7 @@ impl<'a> Parser<'a> {
         } else {
             let range = self.next_token().ok_or_else(||())?.range();
             self.error_reporter
-                .add_diagnostic("main.cm", range, format!("expected `int` , `bool` or `void` , found {:?}", self.next_token().unwrap().token_type));
+                .add_diagnostic("main.cm", range, format!("expected `int` , `bool` or `void` , found {}", self.next_token().unwrap().token_type));
             return Err(());
         }
         self.match_and_consume(TokenType::Id, true)?;
@@ -498,7 +498,7 @@ impl<'a> Parser<'a> {
                     self.error_reporter.add_diagnostic(
                         "main.cm",
                         token.range(),
-                        "expected `Identifier`, `Num`, `LPAREN`".to_string(),
+                        "expected `Identifier`, `NumberLiteral`, `(`".to_string(),
                     );
                     return Err(());
                 }
@@ -569,7 +569,7 @@ impl<'a> Parser<'a> {
                         "main.cm",
                         token.range(),
                         format!(
-                            "expected `int` or `void` or `bool`, found {:?}",
+                            "expected `int` or `void` or `bool`, found {}",
                             token.token_type
                         ),
                     );
