@@ -26,11 +26,16 @@
     "url": "https://github.com/rustwasm/create-wasm-app/issues"
   },
   "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "dependencies": {
+    "codemirror": "^5.58.3"
+  },
   "devDependencies": {
+    "copy-webpack-plugin": "^5.0.0",
+    "css-loader": "^5.0.1",
+    "style-loader": "^2.0.0",
     "wasm": "../pkg",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5",
-    "copy-webpack-plugin": "^5.0.0"
+    "webpack-dev-server": "^3.1.5"
   }
 }
