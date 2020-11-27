@@ -18,16 +18,12 @@ pub fn interpret(program: &mut Program, std_io: bool) -> Result<Environment, ()>
     };
     program.evaluate(&mut env)?;
     let func = if let Some(scope) = env.scope_stack.last() {
-        match scope.get("main") {
-            Some(Binding::FunctionDeclaration(func)) => func,
-            _ => {
-                return Err(());
-            }
-        }
+        // match scope.get("main") {
+        // }
     } else {
         return Err(());
     };
-    func.body.clone().evaluate(&mut env)?;
+    // func.body.clone().evaluate(&mut env)?;
     Ok(env)
 }
 

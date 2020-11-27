@@ -1,7 +1,8 @@
+use super::env::{ArrayType, Binding, Environment, Scope};
 use crate::parser::ast::*;
 use fxhash::FxHashMap;
-
-use super::env::{ArrayType, Binding, Environment, Scope};
+use std::cell::RefCell;
+use std::rc::Rc;
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -52,13 +53,20 @@ impl VarDeclaration {
             match self.num {
                 None => match self.type_specifier.kind {
                     TypeSpecifierKind::Int => {
-                        local_scope.insert(self.id.value.clone(), Binding::NumberLiteral(0));
+                        local_scope.insert(
+                            self.id.value.clone(),
+                            Rc::new(RefCell::new(Binding::NumberLiteral(0))),
+                        );
                     }
                     TypeSpecifierKind::Boolean => {
-                        local_scope.insert(self.id.value.clone(), Binding::BooleanLiteral(false));
+                        local_scope.insert(
+                            self.id.value.clone(),
+                            Rc::new(RefCell::new(Binding::BooleanLiteral(false))),
+                        );
                     }
                     TypeSpecifierKind::Void => {
-                        local_scope.insert(self.id.value.clone(), Binding::Void);
+                        local_scope
+                            .insert(self.id.value.clone(), Rc::new(RefCell::new(Binding::Void)));
                     }
                 },
                 Some(ref num) => {
@@ -67,19 +75,19 @@ impl VarDeclaration {
                         TypeSpecifierKind::Int => {
                             local_scope.insert(
                                 self.id.value.clone(),
-                                Binding::Array(ArrayType::Number {
+                                Rc::new(RefCell::new(Binding::Array(ArrayType::Number {
                                     length,
                                     array: vec![0; length],
-                                }),
+                                }))),
                             );
                         }
                         TypeSpecifierKind::Boolean => {
                             local_scope.insert(
                                 self.id.value.clone(),
-                                Binding::Array(ArrayType::Boolean {
+                                Rc::new(RefCell::new(Binding::Array(ArrayType::Boolean {
                                     length,
                                     array: vec![false; length],
-                                }),
+                                }))),
                             );
                         }
                         _ => {
@@ -193,7 +201,7 @@ impl CompoundStatement {
         let mut scope = {
             let mut map = FxHashMap::default();
             while let Some((string, binding)) = env.call_expression_binding.pop() {
-                map.insert(string, binding);
+                map.insert(string, Rc::new(RefCell::new(binding)));
             }
             map
         };
@@ -253,7 +261,7 @@ impl Evaluate for AssignmentExpression {
                 );
             })?;
             *lhs_binding = rhs_eval;
-            Ok(lhs_binding.clone())
+            Ok(rhs_eval)
         }
     }
 }
@@ -295,8 +303,8 @@ impl Evaluate for BinaryExpression {
 }
 #[inline]
 fn evaluate_binary_expression_literal(
-    m: &Binding,
-    n: &Binding,
+    m: &Rc<RefCell<Binding>>,
+    n: &Rc<RefCell<Binding>>,
     op: &Operation,
 ) -> Result<Binding, ()> {
     match (m, n) {
@@ -337,6 +345,10 @@ impl Evaluate for Factor {
                 .get(&var.id.value)
                 .and_then(|bind| Some(bind.clone()))
                 .ok_or_else(|| {}),
+            // Factor::Var(_) => {
+            //     // unimplemented!() // TODO
+            //     Ok(Binding::NumberLiteral(1))
+            // }
         }
     }
 }
@@ -365,7 +377,7 @@ impl Evaluate for CallExpression {
             return Ok(Binding::Void);
         }
         let func_decl = env.get_func(func_name).ok_or_else(|| {})?;
-        if let Binding::FunctionDeclaration(decl) = func_decl {
+        if let Binding::FunctionDeclaration(decl) = func_decl.borrow().clone() {
             let decl = decl.clone();
             env.call_expression_binding =
                 prepare_call_expression_binding(env, &decl.params, &self.arguments)?;

@@ -1,6 +1,6 @@
 use crate::parser::ast::FunctionDeclaration;
 use fxhash::FxHashMap;
-use std::rc::Rc;
+use std::{rc::Rc, cell::RefCell};
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
@@ -74,7 +74,7 @@ pub enum Binding {
     Variable(String),
     Void,
 }
-pub type Scope = FxHashMap<String, Binding>;
+pub type Scope = FxHashMap<String, Rc<RefCell<Binding>>>;
 #[derive(Debug)]
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
@@ -84,25 +84,26 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn get(&self, name: &String) -> Option<&Binding> {
+    pub fn get(&self, name: &String) -> Option<&Rc<RefCell<Binding>>> {
         for scope in self.scope_stack.iter().rev() {
             if let Some(binding) = scope.get(name) {
-                return Some(binding);
+                return Some(&binding)
             }
         }
         None
     }
 
-    pub fn get_func(&self, name: &String) -> Option<&Binding> {
-        if let Some(binding) = self.scope_stack.first().unwrap().get(name) {
-            return Some(binding);
-        }
-        None
+    pub fn get_func(&self, name: &String) -> Option<&Rc<RefCell<Binding>>> {
+        self.scope_stack.first().unwrap().get(name)
+        // if let Some(binding) =  {
+        //     return 
+        // }
+        // None
     }
     pub fn get_mut(&mut self, name: &String) -> Option<&mut Binding> {
         for scope in self.scope_stack.iter_mut().rev() {
             if let Some(binding) = scope.get_mut(name) {
-                return Some(binding);
+                return Some(&mut binding.borrow_mut());
             }
         }
         None
@@ -112,7 +113,7 @@ impl Environment {
             if scope.contains_key(&name) {
                 return Err(());
             } else {
-                scope.insert(name, binding);
+                scope.insert(name, Rc::new(RefCell::new(binding)));
                 return Ok(());
             }
         }
