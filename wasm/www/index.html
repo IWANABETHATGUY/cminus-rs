@@ -6,6 +6,11 @@
   <title>Hello wasm-pack!</title>
   <link href="https://cdn.bootcdn.net/ajax/libs/codemirror/5.58.2/codemirror.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/codemirror/5.58.2/addon/fold/foldgutter.css" />
+  <style>
+    .CodeMirror.cm-s-default.CodeMirror-wrap {
+      height: 100%;
+    }
+  </style>
 </head>
 
 <body>
@@ -21,7 +26,7 @@
   <button id="tokenize_button">tokenize</button>
   <button id="parse_button">parse</button>
   <button id="interpret_button">interpret</button>
-  <div class="container" style="display: flex;height: 100%">
+  <div class="container" style="display: flex;height: calc(100vh - 40px);">
     <div id="editor" style="width: 50%; "></div>
     <textarea id="result" readonly style="width: 50%; height:100%" rows="30"></textarea>
   </div>
