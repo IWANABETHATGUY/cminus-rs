@@ -119,7 +119,7 @@ impl Environment {
         Err(())
     }
     pub fn get_std_simulator_string(&self) -> String {
-        format!("{}", self.std_simulator.join("\n"))
+        format!("{}", self.std_simulator.join(""))
     }
     // pub fn update(&mut self, name: &String) {
 

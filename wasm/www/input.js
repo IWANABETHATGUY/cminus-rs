@@ -38,5 +38,6 @@ tokenize_button.addEventListener('click', function () {
 })
 interpret_button.addEventListener('click', function () {
   const interpretResult = interpret(editor.getValue())
+  console.log(interpretResult);
   result.textContent = interpretResult
 })
