@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
   "dependencies": {
+    "@codemirror/next": "^0.14.0",
     "codemirror": "^5.58.3"
   },
   "devDependencies": {
