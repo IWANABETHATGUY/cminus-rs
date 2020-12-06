@@ -4,6 +4,6 @@ int fibonacci(int a) {
   }
   return fibonacci(a - 1) + fibonacci(a - 2);
 }
-/* void main() {
-  println(fibonacci(30));
-}*/
+void main() {
+  println(fibonacci(3));
+}

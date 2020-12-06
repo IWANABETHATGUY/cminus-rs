@@ -1,5 +1,9 @@
-int a;
-
+int test(int a, int b) {
+   return a + b;
+}
 void main() {
-   int a = test(3, 2);
+   int c = 3;
+   int d = 4;
+   int a = test(c, d);
+   print(a);
 }

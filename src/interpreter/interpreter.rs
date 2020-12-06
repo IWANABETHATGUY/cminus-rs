@@ -37,7 +37,7 @@ impl Evaluate for Declaration {
                 );
             }
             Declaration::VarDeclaration(var) => {
-                var.evaluate(env.scope_stack.last_mut().unwrap())?;
+                var.evaluate(env)?;
             }
         }
         Ok(Binding::Void)
@@ -45,27 +45,45 @@ impl Evaluate for Declaration {
 }
 
 impl VarDeclaration {
-    fn evaluate(&self, local_scope: &mut Scope) -> Result<Binding, ()> {
-        if local_scope.contains_key(&self.id.value) {
+    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+        // let local_scope = env.scope_stack.last_mut().unwrap();
+        if env.scope_stack.last_mut().unwrap().contains_key(&self.id.value) {
             return Err(());
         } else {
+            // TODO: need type checking here
             match self.num {
                 None => match self.type_specifier.kind {
                     TypeSpecifierKind::Int => {
-                        local_scope.insert(self.id.value.clone(), Binding::NumberLiteral(0));
+                        let init = if let Some(ref initializer) = self.initializer {
+                            initializer.evaluate(env)?
+                        } else {
+                            Binding::NumberLiteral(0)
+                        };
+                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), init);
                     }
                     TypeSpecifierKind::Boolean => {
-                        local_scope.insert(self.id.value.clone(), Binding::BooleanLiteral(false));
+                        let init = if let Some(ref initializer) = self.initializer {
+                            initializer.evaluate(env)?
+                        } else {
+                            Binding::BooleanLiteral(false)
+                        };
+                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), Binding::BooleanLiteral(false));
                     }
                     TypeSpecifierKind::Void => {
-                        local_scope.insert(self.id.value.clone(), Binding::Void);
+                        let init = if let Some(ref initializer) = self.initializer {
+                            initializer.evaluate(env)?
+                        } else {
+                            Binding::Void
+                        };
+                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), init);
                     }
                 },
                 Some(ref num) => {
+                    // TODO: here also need to handle with declaration with initializer
                     let length = num.value as usize;
                     match self.type_specifier.kind {
                         TypeSpecifierKind::Int => {
-                            local_scope.insert(
+                            env.scope_stack.last_mut().unwrap().insert(
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Number {
                                     length,
@@ -74,7 +92,7 @@ impl VarDeclaration {
                             );
                         }
                         TypeSpecifierKind::Boolean => {
-                            local_scope.insert(
+                            env.scope_stack.last_mut().unwrap().insert(
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Boolean {
                                     length,
@@ -199,7 +217,7 @@ impl CompoundStatement {
         };
         let mut is_empty_env = true;
         for decl in self.local_declaration.iter() {
-            if let Err(_) = decl.evaluate(&mut scope) {
+            if let Err(_) = decl.evaluate(env) {
                 return Err(());
             }
         }
