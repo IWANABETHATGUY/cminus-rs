@@ -1,16 +1,5 @@
-bool fibonacci(int i, bool a) {
-   bool a;
-   if (i == 1) {
-      return 1;
-   }
-   while (true) {
-      i = func(i + 1 + 3);
-   }
-   /* u-u/v*v == u mod v */
-   return fibonacci(n - 1) +fibonacci(n - 2);
-   
-}
+int a;
+
 void main() {
-  int a;
-  a = 3; 
+   int a = test(3, 2);
 }
