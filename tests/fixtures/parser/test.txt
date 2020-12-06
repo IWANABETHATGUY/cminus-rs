@@ -10,7 +10,14 @@ bool fibonacci(int i, bool a) {
    return fibonacci(n - 1) +fibonacci(n - 2);
    
 }
+
+int test(int a, int b) {
+   return a + b;
+}
+
 void main() {
-  int a;
-  a = 3; 
+   int c = 3;
+   int d = 4;
+   int a = test(c, d);
+   println(a);
 }

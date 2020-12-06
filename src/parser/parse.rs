@@ -169,11 +169,17 @@ impl<'a> Parser<'a> {
             num = Some(NumberLiteral { value });
             self.match_and_consume(TokenType::Rbrack, true)?;
         }
+        let mut initializer = None;
+        if self.match_token(TokenType::Assign) {
+            self.consume(1);
+            initializer = Some(self.parse_expression()?);
+        }
         self.match_and_consume(TokenType::Semi, true)?;
         Ok(Declaration::VarDeclaration(VarDeclaration {
             type_specifier,
             id: identifier,
             num,
+            initializer
         }))
     }
 

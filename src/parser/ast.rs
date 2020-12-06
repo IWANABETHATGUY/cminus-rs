@@ -42,6 +42,7 @@ pub struct VarDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
     pub(crate) num: Option<NumberLiteral>,
+    pub(crate) initializer: Option<Expression>,
 }
 impl Walk for VarDeclaration {
     fn walk(&self, level: usize) -> String {
@@ -49,6 +50,9 @@ impl Walk for VarDeclaration {
         let mut children = vec![self.type_specifier.walk(level + 1), self.id.walk(level + 1)];
         if let Some(ref num) = self.num {
             children.push(num.walk(level + 1));
+        }
+        if let Some(ref initializer) = self.initializer {
+            children.push(format!("{}<Initializer>", " ".repeat(2 * (level + 1))) + &initializer.walk(level + 1).trim_start());
         }
         ast + &children.join("\n")
     }

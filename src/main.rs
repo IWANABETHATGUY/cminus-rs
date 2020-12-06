@@ -10,7 +10,7 @@ use std::{fs::read_to_string, time::Instant};
 
 use std::path;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/interpreter/test.txt");
+    let path = path::Path::new("tests/fixtures/parser/test.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
@@ -23,17 +23,17 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
-    // let start = Instant::now();
-    // match interpreter::interpret(&mut res, false) {
-    //     Ok(env) => {
-    //         println!("{}", env.get_std_simulator_string());
-    //     }
-    //     Err(_) => {
-    //         println!("interpreter error",);
-    //     }
-    // };
-    // println!("total: {:?}", start.elapsed());
+    let start = Instant::now();
+    match interpreter::interpret(&mut res, false) {
+        Ok(env) => {
+            println!("{}", env.get_std_simulator_string());
+        }
+        Err(_) => {
+            println!("interpreter error",);
+        }
+    };
+    println!("total: {:?}", start.elapsed());
     // parser.error_reporter.emit_std()?;
-    println!("{}", res.walk(0));
+    // println!("{}", res.walk(0));
     Ok(())
 }
