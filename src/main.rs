@@ -6,7 +6,7 @@ mod lexer;
 mod parser;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
-use std::{fs::read_to_string, time::Instant};
+use std::{fs::read_to_string};
 
 use std::path;
 fn main() -> Result<(), std::io::Error> {
@@ -23,17 +23,18 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
-    let start = Instant::now();
-    match interpreter::interpret(&mut res, false) {
-        Ok(env) => {
-            println!("{}", env.get_std_simulator_string());
-        }
-        Err(_) => {
-            println!("interpreter error",);
-        }
-    };
-    println!("total: {:?}", start.elapsed());
+    // let start = Instant::now();
+    // match interpreter::interpret(&mut res, false) {
+    //     Ok(env) => {
+    //         println!("{}", env.get_std_simulator_string());
+    //     }
+    //     Err(_) => {
+    //         println!("interpreter error",);
+    //     }
+    // };
+    // println!("total: {:?}", start.elapsed());
     // parser.error_reporter.emit_std()?;
     // println!("{}", res.walk(0));
+    println!("{}", serde_json::to_string(&res).unwrap());
     Ok(())
 }
