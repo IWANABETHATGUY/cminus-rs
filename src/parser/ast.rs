@@ -3,9 +3,11 @@ pub trait Walk {
     fn walk(&self, level: usize) -> String;
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
+    #[serde(default = "something")]
+    pub(crate) _type: Option<String>
 }
 impl Walk for Program {
     fn walk(&self, level: usize) -> String {

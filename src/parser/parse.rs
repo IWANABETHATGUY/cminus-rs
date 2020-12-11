@@ -124,7 +124,7 @@ impl<'a> Parser<'a> {
             let declaration = self.parse_declaration()?;
             declarations.push(declaration);
         }
-        Ok(Program { declarations })
+        Ok(Program { declarations, ..Default::default() })
     }
 
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
