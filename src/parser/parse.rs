@@ -124,16 +124,25 @@ impl<'a> Parser<'a> {
             let declaration = self.parse_declaration()?;
             declarations.push(declaration);
         }
-        Ok(Program { declarations, ..Default::default() })
+        Ok(Program {
+            declarations,
+            ..Default::default()
+        })
     }
 
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
         if self.match_type_specifier() {
             self.consume(1);
         } else {
-            let range = self.next_token().ok_or_else(||())?.range();
-            self.error_reporter
-                .add_diagnostic("main.cm", range, format!("expected `int` , `bool` or `void` , found {}", self.next_token().unwrap().token_type));
+            let range = self.next_token().ok_or_else(|| ())?.range();
+            self.error_reporter.add_diagnostic(
+                "main.cm",
+                range,
+                format!(
+                    "expected `int` , `bool` or `void` , found {}",
+                    self.next_token().unwrap().token_type
+                ),
+            );
             return Err(());
         }
         self.match_and_consume(TokenType::Id, true)?;
@@ -151,6 +160,7 @@ impl<'a> Parser<'a> {
         let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
+            ..Default::default()
         };
         let mut num = None;
         if self.match_token(TokenType::Lbrack) {
@@ -166,7 +176,10 @@ impl<'a> Parser<'a> {
                 );
                 return Err(());
             };
-            num = Some(NumberLiteral { value });
+            num = Some(NumberLiteral {
+                value,
+                ..Default::default()
+            });
             self.match_and_consume(TokenType::Rbrack, true)?;
         }
         let mut initializer = None;
@@ -179,7 +192,8 @@ impl<'a> Parser<'a> {
             type_specifier,
             id: identifier,
             num,
-            initializer
+            initializer,
+            ..Default::default()
         }))
     }
 
@@ -189,6 +203,7 @@ impl<'a> Parser<'a> {
         let mut params: Params = Params::Void;
         let identifier = Identifier {
             value: id_token.content,
+            ..Default::default()
         };
         self.match_and_consume(TokenType::Lparen, true)?;
         match self.next_token() {
@@ -221,6 +236,7 @@ impl<'a> Parser<'a> {
             id: identifier,
             params,
             body,
+            ..Default::default()
         }))
     }
 
@@ -255,6 +271,7 @@ impl<'a> Parser<'a> {
         Ok(CompoundStatement {
             local_declaration,
             statement_list,
+            ..Default::default()
         })
     }
     fn parse_statement(&mut self) -> Result<Statement, ()> {
@@ -287,6 +304,7 @@ impl<'a> Parser<'a> {
         Ok(IterationStatement {
             test: expression,
             body,
+            ..Default::default()
         })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
@@ -305,6 +323,7 @@ impl<'a> Parser<'a> {
             consequent,
             alternative,
             test,
+            ..Default::default()
         })
     }
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
@@ -314,7 +333,10 @@ impl<'a> Parser<'a> {
             expression = Some(self.parse_expression()?);
         }
         self.match_and_consume(TokenType::Semi, true)?;
-        Ok(ReturnStatement { expression })
+        Ok(ReturnStatement {
+            expression,
+            ..Default::default()
+        })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ()> {
         let mut expression = None;
@@ -324,6 +346,7 @@ impl<'a> Parser<'a> {
         self.match_and_consume(TokenType::Semi, true)?;
         Ok(Statement::ExpressionStatement(ExpressionStatement {
             expression,
+            ..Default::default()
         }))
     }
 
@@ -335,7 +358,11 @@ impl<'a> Parser<'a> {
         }
         Ok(Var {
             expression,
-            id: Identifier { value: id.content },
+            id: Identifier {
+                value: id.content,
+                ..Default::default()
+            },
+            ..Default::default()
         })
     }
     fn parse_assignment_expression(&mut self) -> Result<Expression, ()> {
@@ -345,6 +372,7 @@ impl<'a> Parser<'a> {
         Ok(Expression::Assignment(AssignmentExpression {
             lhs: var,
             rhs: Box::new(expression),
+            ..Default::default()
         }))
     }
     fn parse_expression(&mut self) -> Result<Expression, ()> {
@@ -388,6 +416,7 @@ impl<'a> Parser<'a> {
                 left: Box::new(left_expr),
                 right: Box::new(right_expr),
                 operation: op,
+                ..Default::default()
             }));
         }
         Ok(left_expr)
@@ -404,6 +433,7 @@ impl<'a> Parser<'a> {
                     left: Box::new(left_term),
                     right: Box::new(right_term),
                     operation,
+                    ..Default::default()
                 });
             }
         }
@@ -420,6 +450,7 @@ impl<'a> Parser<'a> {
                     left: Box::new(left_factor),
                     right: Box::new(right_factor),
                     operation,
+                    ..Default::default()
                 });
             }
         }
@@ -445,12 +476,14 @@ impl<'a> Parser<'a> {
                     };
                     return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
                         value,
+                        ..Default::default()
                     })));
                 }
                 TokenType::BooleanLiteral => {
                     self.consume(1);
                     return Ok(Expression::Factor(Factor::BooleanLiteral(BooleanLiteral {
                         value: content.parse::<bool>().unwrap(),
+                        ..Default::default()
                     })));
                 }
                 TokenType::Lparen => {
@@ -471,7 +504,11 @@ impl<'a> Parser<'a> {
                                 return Ok(Expression::Factor(Factor::CallExpression(
                                     CallExpression {
                                         arguments,
-                                        id: Identifier { value },
+                                        id: Identifier {
+                                            value,
+                                            ..Default::default()
+                                        },
+                                        ..Default::default()
                                     },
                                 )));
                             }
@@ -480,22 +517,34 @@ impl<'a> Parser<'a> {
                                 let local_expression = self.parse_expression()?;
                                 self.match_and_consume(TokenType::Rbrack, true)?;
                                 let var = Var {
-                                    id: Identifier { value },
+                                    id: Identifier {
+                                        value,
+                                        ..Default::default()
+                                    },
                                     expression: Some(Box::new(local_expression)),
+                                    ..Default::default()
                                 };
                                 return Ok(Expression::Factor(Factor::Var(var)));
                             }
                             _ => {
                                 return Ok(Expression::Factor(Factor::Var(Var {
                                     expression: None,
-                                    id: Identifier { value },
+                                    id: Identifier {
+                                        value,
+                                        ..Default::default()
+                                    },
+                                    ..Default::default()
                                 })));
                             }
                         }
                     } else {
                         return Ok(Expression::Factor(Factor::Var(Var {
                             expression: None,
-                            id: Identifier { value },
+                            id: Identifier {
+                                value,
+                                ..Default::default()
+                            },
+                            ..Default::default()
                         })));
                     }
                 }
@@ -535,6 +584,7 @@ impl<'a> Parser<'a> {
         let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
+            ..Default::default()
         };
         let mut is_array = false;
         if self.match_token(TokenType::Lbrack) {
@@ -546,6 +596,7 @@ impl<'a> Parser<'a> {
             type_specifier,
             id: identifier,
             is_array,
+            ..Default::default()
         })
     }
     fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
@@ -555,18 +606,21 @@ impl<'a> Parser<'a> {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Int,
+                        ..Default::default()
                     });
                 }
                 TokenType::Keyword(KeywordType::VOID) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Void,
+                        ..Default::default()
                     });
                 }
                 TokenType::Keyword(KeywordType::BOOL) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Boolean,
+                        ..Default::default()
                     });
                 }
                 _ => {

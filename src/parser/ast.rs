@@ -1,13 +1,13 @@
+use proc::{add_type, DefaultType};
 use serde::Serialize;
 pub trait Walk {
     fn walk(&self, level: usize) -> String;
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
-    #[serde(default = "something")]
-    pub(crate) _type: Option<String>
 }
 impl Walk for Program {
     fn walk(&self, level: usize) -> String {
@@ -20,7 +20,8 @@ impl Walk for Program {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct FunctionDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -40,7 +41,8 @@ impl Walk for FunctionDeclaration {
         ast
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct VarDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -55,7 +57,10 @@ impl Walk for VarDeclaration {
             children.push(num.walk(level + 1));
         }
         if let Some(ref initializer) = self.initializer {
-            children.push(format!("{}<Initializer>", " ".repeat(2 * (level + 1))) + &initializer.walk(level + 1).trim_start());
+            children.push(
+                format!("{}<Initializer>", " ".repeat(2 * (level + 1)))
+                    + &initializer.walk(level + 1).trim_start(),
+            );
         }
         ast + &children.join("\n")
     }
@@ -73,7 +78,8 @@ impl Walk for Declaration {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct Identifier {
     pub(crate) value: String,
 }
@@ -82,7 +88,8 @@ impl Walk for Identifier {
         format!("{}Identifier({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct NumberLiteral {
     pub(crate) value: i32,
 }
@@ -91,7 +98,8 @@ impl Walk for NumberLiteral {
         format!("{}NumberLiteral({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct BooleanLiteral {
     pub(crate) value: bool,
 }
@@ -100,7 +108,8 @@ impl Walk for BooleanLiteral {
         format!("{}BooleanLiteral({})", " ".repeat(2 * level), self.value)
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct TypeSpecifier {
     pub(crate) kind: TypeSpecifierKind,
 }
@@ -144,7 +153,8 @@ impl Walk for Params {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct Parameter {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -163,7 +173,8 @@ impl Walk for Parameter {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct CompoundStatement {
     pub(crate) local_declaration: Vec<VarDeclaration>,
     pub(crate) statement_list: Vec<Statement>,
@@ -217,7 +228,8 @@ impl Walk for Statement {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct SelectionStatement {
     pub(crate) test: Expression,
     pub(crate) consequent: Box<Statement>,
@@ -238,7 +250,8 @@ impl Walk for SelectionStatement {
             .join("\n")
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct IterationStatement {
     pub(crate) test: Expression,
     pub(crate) body: Box<Statement>,
@@ -255,7 +268,8 @@ impl Walk for IterationStatement {
         ast + &children.join("\n")
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct ReturnStatement {
     pub(crate) expression: Option<Expression>,
 }
@@ -269,7 +283,8 @@ impl Walk for ReturnStatement {
         ast
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct ExpressionStatement {
     pub(crate) expression: Option<Expression>,
 }
@@ -311,7 +326,8 @@ impl Walk for Expression {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct AssignmentExpression {
     pub(crate) lhs: Var,
     pub(crate) rhs: Box<Expression>,
@@ -323,7 +339,8 @@ impl Walk for AssignmentExpression {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct Var {
     pub(crate) id: Identifier,
     pub(crate) expression: Option<Box<Expression>>,
@@ -335,7 +352,8 @@ impl Walk for Var {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
@@ -380,7 +398,8 @@ impl Walk for Factor {
         }
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[add_type]
+#[derive(Debug, Clone, Serialize, DefaultType)]
 pub struct CallExpression {
     pub(crate) id: Identifier,
     pub(crate) arguments: Vec<Expression>,
