@@ -331,7 +331,9 @@ impl<'a> Parser<'a> {
         let id = self.match_and_consume(TokenType::Id, true)?;
         let mut expression = None;
         if self.match_token(TokenType::Lbrack) {
+            self.consume(1);
             expression = Some(Box::new(self.parse_expression()?));
+            self.match_and_consume(TokenType::Rbrack, true)?;
         }
         Ok(Var {
             expression,

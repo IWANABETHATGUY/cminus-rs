@@ -47,7 +47,12 @@ impl Evaluate for Declaration {
 impl VarDeclaration {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         // let local_scope = env.scope_stack.last_mut().unwrap();
-        if env.scope_stack.last_mut().unwrap().contains_key(&self.id.value) {
+        if env
+            .scope_stack
+            .last_mut()
+            .unwrap()
+            .contains_key(&self.id.value)
+        {
             return Err(());
         } else {
             // TODO: need type checking here
@@ -59,7 +64,10 @@ impl VarDeclaration {
                         } else {
                             Binding::NumberLiteral(0)
                         };
-                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), init);
+                        env.scope_stack
+                            .last_mut()
+                            .unwrap()
+                            .insert(self.id.value.clone(), init);
                     }
                     TypeSpecifierKind::Boolean => {
                         let init = if let Some(ref initializer) = self.initializer {
@@ -67,7 +75,10 @@ impl VarDeclaration {
                         } else {
                             Binding::BooleanLiteral(false)
                         };
-                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), Binding::BooleanLiteral(false));
+                        env.scope_stack
+                            .last_mut()
+                            .unwrap()
+                            .insert(self.id.value.clone(), init);
                     }
                     TypeSpecifierKind::Void => {
                         let init = if let Some(ref initializer) = self.initializer {
@@ -75,7 +86,10 @@ impl VarDeclaration {
                         } else {
                             Binding::Void
                         };
-                        env.scope_stack.last_mut().unwrap().insert(self.id.value.clone(), init);
+                        env.scope_stack
+                            .last_mut()
+                            .unwrap()
+                            .insert(self.id.value.clone(), init);
                     }
                 },
                 Some(ref num) => {
@@ -260,8 +274,44 @@ impl Evaluate for Expression {
 impl Evaluate for AssignmentExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         if let Some(box ref expr) = self.lhs.expression {
-            // this is a array expression assignment
-            unimplemented!() // TODO
+            let index_eval = expr.evaluate(env)?;
+            let rhs_eval = self.rhs.evaluate(env)?;
+            if let Binding::NumberLiteral(index) = index_eval {
+                match env.get_mut(&self.lhs.id.value).ok_or_else(|| {
+                    println!(
+                        "the variable {:?} can't be found in this scope",
+                        self.lhs.id.value
+                    );
+                })? {
+                    Binding::Array(arr) => match arr {
+                        ArrayType::Boolean { array, .. }
+                            if matches!(rhs_eval, Binding::BooleanLiteral(_)) =>
+                        {
+                            array[index as usize] =
+                                rhs_eval.clone().into_boolean_literal().unwrap();
+                            Ok(rhs_eval)
+                        }
+                        ArrayType::Number { array, .. }
+                            if matches!(rhs_eval, Binding::NumberLiteral(_)) =>
+                        {
+                            array[index as usize] = rhs_eval.clone().into_number_literal().unwrap();
+                            Ok(rhs_eval)
+                        }
+                        _ => Err(()),
+                    },
+                    _ => {
+                        println!(
+                            "the variable {:?} should be found in this scope",
+                            self.lhs.id.value
+                        );
+                        Err(())
+                    }
+                }
+            } else {
+                unimplemented!() // TODO
+            }
+        // env.get_mut();
+        // this is a array expression assignment
         } else {
             let rhs_eval = self.rhs.evaluate(env)?;
             let lhs_binding = env.get_mut(&self.lhs.id.value).ok_or_else(|| {
@@ -351,10 +401,46 @@ impl Evaluate for Factor {
             Factor::CallExpression(call_expr) => call_expr.evaluate(env),
             Factor::NumberLiteral(literal) => Ok(Binding::NumberLiteral(literal.value)),
             Factor::BooleanLiteral(literal) => Ok(Binding::BooleanLiteral(literal.value)),
-            Factor::Var(var) => env
-                .get(&var.id.value)
-                .and_then(|bind| Some(bind.clone()))
-                .ok_or_else(|| {}),
+            Factor::Var(var) => {
+                // let index_eval = expr.evaluate(env)?;
+                match var.expression {
+                    Some(box ref expr) => {
+                        let index_eval = expr.evaluate(env)?;
+                        if let Binding::NumberLiteral(index) = index_eval {
+                            match env.get_mut(&var.id.value).ok_or_else(|| {
+                                println!(
+                                    "the variable {:?} can't be found in this scope",
+                                    var.id.value
+                                );
+                            })? {
+                                Binding::Array(arr) => match arr {
+                                    ArrayType::Boolean { array, .. } => {
+                                        Ok(Binding::BooleanLiteral(array[index as usize]))
+                                    }
+                                    ArrayType::Number { array, .. } => 
+                                    {
+                                        Ok(Binding::NumberLiteral(array[index as usize]))
+                                    }
+                                    _ => Err(()),
+                                },
+                                _ => {
+                                    panic!("only array type can be indexed");
+                                    // Err(())
+                                }
+                            }
+                        } else {
+                            panic!("index of array should be number");
+                        }
+                    }
+                    None => env
+                        .get(&var.id.value)
+                        .and_then(|bind| Some(bind.clone()))
+                        .ok_or_else(|| {}),
+                }
+
+                // // let index =
+                //
+            }
         }
     }
 }

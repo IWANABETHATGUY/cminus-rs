@@ -1,13 +1,14 @@
 use crate::parser::ast::FunctionDeclaration;
 use fxhash::FxHashMap;
 use std::rc::Rc;
+use enum_as_inner::EnumAsInner;
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
     Number(i32),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub enum ArrayType {
     Boolean { length: usize, array: Vec<bool> },
     Number { length: usize, array: Vec<i32> },
@@ -65,7 +66,7 @@ impl ArrayType {
         }
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub enum Binding {
     NumberLiteral(i32),
     BooleanLiteral(bool),
