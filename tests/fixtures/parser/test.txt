@@ -18,18 +18,16 @@ int test(int a[], int b) {
 void main() {
    int a[5];
    int i = 4;
-   int j = 0;
-   int tem;
    a[0] = 4;
    a[1] = 10;
    a[2] = 1;
    a[3] = 7;
    a[4] = 2;
    while (i > 0) {
-      j = 0;
+      int j = 0;
       while (j < i) {
          if (a[j] > a[j + 1]) {
-            tem = a[j];
+            int tem = a[j];
             a[j] = a[j + 1];
             a[j + 1] = tem;
          }

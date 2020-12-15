@@ -53,6 +53,7 @@ impl VarDeclaration {
             .unwrap()
             .contains_key(&self.id.value)
         {
+            println!("Can not declare a variable twice");
             return Err(());
         } else {
             // TODO: need type checking here
@@ -229,15 +230,11 @@ impl CompoundStatement {
             }
             map
         };
-        let mut is_empty_env = true;
+        env.scope_stack.push(scope);
         for decl in self.local_declaration.iter() {
             if let Err(_) = decl.evaluate(env) {
                 return Err(());
             }
-        }
-        if scope.len() != 0 {
-            is_empty_env = false;
-            env.scope_stack.push(scope);
         }
         let mut option_binding = None;
         for stat in self.statement_list.iter() {
@@ -254,9 +251,7 @@ impl CompoundStatement {
             }
         }
         // println!("{}:{:?}", env.scope_stack.len(), env.scope_stack.last());
-        if !is_empty_env {
-            env.scope_stack.pop();
-        }
+        env.scope_stack.pop();
         Ok(option_binding)
     }
 }
@@ -417,8 +412,7 @@ impl Evaluate for Factor {
                                     ArrayType::Boolean { array, .. } => {
                                         Ok(Binding::BooleanLiteral(array[index as usize]))
                                     }
-                                    ArrayType::Number { array, .. } => 
-                                    {
+                                    ArrayType::Number { array, .. } => {
                                         Ok(Binding::NumberLiteral(array[index as usize]))
                                     }
                                     _ => Err(()),
