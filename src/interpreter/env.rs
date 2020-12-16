@@ -1,16 +1,17 @@
 use crate::parser::ast::FunctionDeclaration;
 use fxhash::FxHashMap;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
+use enum_as_inner::EnumAsInner;
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
     Number(i32),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub enum ArrayType {
-    Boolean { length: usize, array: Vec<bool> },
-    Number { length: usize, array: Vec<i32> },
+    Boolean { length: usize, array: Rc<RefCell<Vec<bool>>> },
+    Number { length: usize, array: Rc<RefCell<Vec<i32>>> },
 }
 
 impl ArrayType {
@@ -23,7 +24,7 @@ impl ArrayType {
                 if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
-                    Ok(LiteralType::Boolean(value[i]))
+                    Ok(LiteralType::Boolean(value.borrow()[i]))
                 }
             }
             ArrayType::Number {
@@ -33,7 +34,7 @@ impl ArrayType {
                 if i >= *length {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
-                    Ok(LiteralType::Number(value[i]))
+                    Ok(LiteralType::Number(value.borrow()[i]))
                 }
             }
         }
@@ -46,7 +47,7 @@ impl ArrayType {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     if let LiteralType::Boolean(v) = data {
-                        array[i] = v;
+                        array.borrow_mut()[i] = v;
                     }
                     Ok(())
                 }
@@ -56,7 +57,7 @@ impl ArrayType {
                     Err("the index should less than array length and greater than 0".into())
                 } else {
                     if let LiteralType::Number(v) = data {
-                        array[i] = v;
+                        array.borrow_mut()[i] = v;
                     }
                     Ok(())
                 }
@@ -65,7 +66,7 @@ impl ArrayType {
         }
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub enum Binding {
     NumberLiteral(i32),
     BooleanLiteral(bool),
