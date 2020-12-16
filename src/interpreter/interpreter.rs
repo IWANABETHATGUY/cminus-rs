@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::parser::ast::*;
 use fxhash::FxHashMap;
 
@@ -102,7 +104,7 @@ impl VarDeclaration {
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Number {
                                     length,
-                                    array: vec![0; length],
+                                    array: Rc::new(RefCell::new(vec![0; length])),
                                 }),
                             );
                         }
@@ -111,7 +113,7 @@ impl VarDeclaration {
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Boolean {
                                     length,
-                                    array: vec![false; length],
+                                    array: Rc::new(RefCell::new(vec![false; length])),
                                 }),
                             );
                         }
@@ -282,14 +284,14 @@ impl Evaluate for AssignmentExpression {
                         ArrayType::Boolean { array, .. }
                             if matches!(rhs_eval, Binding::BooleanLiteral(_)) =>
                         {
-                            array[index as usize] =
+                            array.borrow_mut()[index as usize] =
                                 rhs_eval.clone().into_boolean_literal().unwrap();
                             Ok(rhs_eval)
                         }
                         ArrayType::Number { array, .. }
                             if matches!(rhs_eval, Binding::NumberLiteral(_)) =>
                         {
-                            array[index as usize] = rhs_eval.clone().into_number_literal().unwrap();
+                            array.borrow_mut()[index as usize] = rhs_eval.clone().into_number_literal().unwrap();
                             Ok(rhs_eval)
                         }
                         _ => Err(()),
@@ -410,10 +412,10 @@ impl Evaluate for Factor {
                             })? {
                                 Binding::Array(arr) => match arr {
                                     ArrayType::Boolean { array, .. } => {
-                                        Ok(Binding::BooleanLiteral(array[index as usize]))
+                                        Ok(Binding::BooleanLiteral(array.borrow()[index as usize]))
                                     }
                                     ArrayType::Number { array, .. } => {
-                                        Ok(Binding::NumberLiteral(array[index as usize]))
+                                        Ok(Binding::NumberLiteral(array.borrow()[index as usize]))
                                     }
                                     _ => Err(()),
                                 },
@@ -483,7 +485,7 @@ impl Evaluate for CallExpression {
         }
     }
 }
-#[inline(always)]
+
 fn prepare_call_expression_binding(
     env: &mut Environment,
     params: &Params,
@@ -511,7 +513,7 @@ fn prepare_call_expression_binding(
         }
     }
 }
-#[inline(always)]
+
 fn generate_assignable_binding(
     env: &mut Environment,
     param: &Parameter,
@@ -526,6 +528,13 @@ fn generate_assignable_binding(
             _ => Err(()),
         }
     } else {
-        unimplemented!() // TODO
+        let arg_binding = arg.evaluate(env)?;
+        match (&param.type_specifier.kind, &arg_binding) {
+            (TypeSpecifierKind::Int, Binding::Array(ArrayType::Number { .. })) => Ok(arg_binding),
+            (TypeSpecifierKind::Boolean, Binding::Array(ArrayType::Boolean { .. })) => {
+                Ok(arg_binding)
+            }
+            _ => Err(()),
+        }
     }
 }

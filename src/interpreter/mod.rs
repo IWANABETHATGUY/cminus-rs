@@ -37,8 +37,10 @@ pub(crate) fn print(binding_list: Vec<Binding>, env: &mut Environment) {
         let string = match binding {
             Binding::BooleanLiteral(val) => format!("{}", val),
             Binding::NumberLiteral(val) => format!("{}", val),
-            Binding::Array(env::ArrayType::Boolean { array, .. }) => format!("{:?}", array),
-            Binding::Array(env::ArrayType::Number { array, .. }) => format!("{:?}", array),
+            Binding::Array(env::ArrayType::Boolean { array, .. }) => {
+                format!("{:?}", array.borrow())
+            }
+            Binding::Array(env::ArrayType::Number { array, .. }) => format!("{:?}", array.borrow()),
             Binding::Variable(_) => {
                 unimplemented!() // TODO
             }
@@ -66,8 +68,10 @@ pub(crate) fn println(binding_list: Vec<Binding>, env: &mut Environment) {
         let arg_string = match binding {
             Binding::NumberLiteral(val) => format!("{}", val),
             Binding::BooleanLiteral(val) => format!("{}", val),
-            Binding::Array(env::ArrayType::Boolean { array, .. }) => format!("{:?}", array),
-            Binding::Array(env::ArrayType::Number { array, .. }) => format!("{:?}", array),
+            Binding::Array(env::ArrayType::Boolean { array, .. }) => {
+                format!("{:?}", array.borrow())
+            }
+            Binding::Array(env::ArrayType::Number { array, .. }) => format!("{:?}", array.borrow()),
             Binding::Variable(_) => {
                 unimplemented!() // TODO
             }
@@ -81,6 +85,6 @@ pub(crate) fn println(binding_list: Vec<Binding>, env: &mut Environment) {
     if env.std_io {
         println!("{}", string_list.join(""));
     } else {
-        env.std_simulator.push(string_list.join("")+ "\n");
+        env.std_simulator.push(string_list.join("") + "\n");
     }
 }
