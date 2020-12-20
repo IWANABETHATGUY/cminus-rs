@@ -1,3 +1,4 @@
 void main() {
-   int a[5] = {1, 2, 3, 4, test(2)};
+   int a[5] = {1, 2, 3, 4};
+   print(a);
 }

@@ -1,17 +1,48 @@
 use crate::parser::ast::FunctionDeclaration;
+use enum_as_inner::EnumAsInner;
 use fxhash::FxHashMap;
 use std::{cell::RefCell, rc::Rc};
-use enum_as_inner::EnumAsInner;
 #[derive(Debug, Clone)]
 pub enum LiteralType {
     Boolean(bool),
     Number(i32),
 }
 
+pub trait IntoLiteral {
+    fn get_literal(&self) -> LiteralType;
+}
+
+impl IntoLiteral for i32 {
+    fn get_literal(&self) -> LiteralType {
+        LiteralType::Number(*self)
+    }
+}
+impl IntoLiteral for bool {
+    fn get_literal(&self) -> LiteralType {
+        LiteralType::Boolean(*self)
+    }
+}
+impl IntoLiteral for Binding {
+    fn get_literal(&self) -> LiteralType {
+        match self {
+            Binding::NumberLiteral(n) => LiteralType::Number(*n),
+            Binding::BooleanLiteral(b) => LiteralType::Boolean(*b),
+            _ => {
+                unimplemented!() // TODO
+            }
+        }
+    }
+}
 #[derive(Debug, Clone, EnumAsInner)]
 pub enum ArrayType {
-    Boolean { length: usize, array: Rc<RefCell<Vec<bool>>> },
-    Number { length: usize, array: Rc<RefCell<Vec<i32>>> },
+    Boolean {
+        length: usize,
+        array: Rc<RefCell<Vec<bool>>>,
+    },
+    Number {
+        length: usize,
+        array: Rc<RefCell<Vec<i32>>>,
+    },
 }
 
 impl ArrayType {
