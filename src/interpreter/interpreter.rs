@@ -1,9 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use super::{env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType, Scope}, println};
 use crate::parser::ast::*;
 use fxhash::FxHashMap;
-
-use super::env::{ArrayType, Binding, Environment, Scope};
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -98,22 +97,43 @@ impl VarDeclaration {
                 Some(ref num) => {
                     // TODO: here also need to handle with declaration with initializer
                     let length = num.value as usize;
+
                     match self.type_specifier.kind {
                         TypeSpecifierKind::Int => {
+                            let initialized_array = self
+                                .get_initialized_array(env, &self.type_specifier.kind, length)?
+                                .into_iter()
+                                .map(|item| match item {
+                                    LiteralType::Boolean(n) => {
+                                        unreachable!();
+                                    }
+                                    LiteralType::Number(n) => n,
+                                })
+                                .collect::<Vec<_>>();
                             env.scope_stack.last_mut().unwrap().insert(
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Number {
                                     length,
-                                    array: Rc::new(RefCell::new(vec![0; length])),
+                                    array: Rc::new(RefCell::new(initialized_array)),
                                 }),
                             );
                         }
                         TypeSpecifierKind::Boolean => {
+                            let initialized_array = self
+                                .get_initialized_array(env, &self.type_specifier.kind, length)?
+                                .into_iter()
+                                .map(|item| match item {
+                                    LiteralType::Boolean(n) => n,
+                                    LiteralType::Number(n) => {
+                                        unreachable!();
+                                    }
+                                })
+                                .collect::<Vec<_>>();
                             env.scope_stack.last_mut().unwrap().insert(
                                 self.id.value.clone(),
                                 Binding::Array(ArrayType::Boolean {
                                     length,
-                                    array: Rc::new(RefCell::new(vec![false; length])),
+                                    array: Rc::new(RefCell::new(initialized_array)),
                                 }),
                             );
                         }
@@ -127,7 +147,43 @@ impl VarDeclaration {
 
         Ok(Binding::Void)
     }
+    fn get_initialized_array(
+        &self,
+        env: &mut Environment,
+        typ: &TypeSpecifierKind,
+        length: usize,
+    ) -> Result<Vec<LiteralType>, ()> {
+        if let Some(ref init) = self.array_initializer {
+            // TODO: if the initializer length is greater than the length , should warn
+            let mut vec = vec![0.get_literal(); length];
+            let len = length.min(init.len());
+            match typ {
+                TypeSpecifierKind::Int => {
+                    for i in 0..len {
+                        vec[i] = init[i].evaluate(env)?.get_literal();
+                    }
+                    Ok(vec)
+                }
+                TypeSpecifierKind::Boolean => {
+                    return Err(());
+                }
+                _ => {
+                    return Err(());
+                }
+            }
+        } else {
+            match typ {
+                TypeSpecifierKind::Int => Ok(vec![0.get_literal(); length]),
+                TypeSpecifierKind::Boolean => Ok(vec![false.get_literal(); length]),
+                _ => {
+                    println!("the array only support int and boolean now!");
+                    Err(())
+                }
+            }
+        }
+    }
 }
+
 // TODO: check the nested returnStatement return binding
 impl Statement {
     fn evaluate(&self, env: &mut Environment) -> Result<Option<Binding>, ()> {
@@ -291,7 +347,8 @@ impl Evaluate for AssignmentExpression {
                         ArrayType::Number { array, .. }
                             if matches!(rhs_eval, Binding::NumberLiteral(_)) =>
                         {
-                            array.borrow_mut()[index as usize] = rhs_eval.clone().into_number_literal().unwrap();
+                            array.borrow_mut()[index as usize] =
+                                rhs_eval.clone().into_number_literal().unwrap();
                             Ok(rhs_eval)
                         }
                         _ => Err(()),

@@ -17,15 +17,10 @@ void bubbleSort(int a[], int len) {
    }
 }
 void main() {
-   int a[5];
+   int a[5] = {4, 10, 1, 7, 2};
    int i = 4;
    int j = 0;
    int tem;
-   a[0] = 4;
-   a[1] = 10;
-   a[2] = 1;
-   a[3] = 7;
-   a[4] = 2;
    bubbleSort(a, 5);
    print(a);
 }

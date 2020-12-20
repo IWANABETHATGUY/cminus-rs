@@ -25,15 +25,11 @@ const bubbleSort = `void bubbleSort(int a[], int len) {
    }
 }
 void main() {
-   int a[5];
-   a[0] = 4;
-   a[1] = 10;
-   a[2] = 1;
-   a[3] = 7;
-   a[4] = 2;
+   int a[5] = {4, 10, 1, 7, 2};
    bubbleSort(a, 5);
    print(a);
 }
+
 `;
 
 export default {

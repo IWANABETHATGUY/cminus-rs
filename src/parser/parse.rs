@@ -131,9 +131,15 @@ impl<'a> Parser<'a> {
         if self.match_type_specifier() {
             self.consume(1);
         } else {
-            let range = self.next_token().ok_or_else(||())?.range();
-            self.error_reporter
-                .add_diagnostic("main.cm", range, format!("expected `int` , `bool` or `void` , found {}", self.next_token().unwrap().token_type));
+            let range = self.next_token().ok_or_else(|| ())?.range();
+            self.error_reporter.add_diagnostic(
+                "main.cm",
+                range,
+                format!(
+                    "expected `int` , `bool` or `void` , found {}",
+                    self.next_token().unwrap().token_type
+                ),
+            );
             return Err(());
         }
         self.match_and_consume(TokenType::Id, true)?;
@@ -153,6 +159,7 @@ impl<'a> Parser<'a> {
             value: id_token.content,
         };
         let mut num = None;
+        let mut array_initializer = None;
         if self.match_token(TokenType::Lbrack) {
             self.consume(1);
             let num_token = self.match_and_consume(TokenType::NumberLiteral, true)?;
@@ -172,17 +179,32 @@ impl<'a> Parser<'a> {
         let mut initializer = None;
         if self.match_token(TokenType::Assign) {
             self.consume(1);
-            initializer = Some(self.parse_expression()?);
+            if num.is_some() {
+                array_initializer = Some(self.parse_array_initialization()?);
+            } else {
+                initializer = Some(self.parse_expression()?);
+            }
         }
         self.match_and_consume(TokenType::Semi, true)?;
         Ok(Declaration::VarDeclaration(VarDeclaration {
             type_specifier,
             id: identifier,
             num,
-            initializer
+            initializer,
+            array_initializer,
         }))
     }
-
+    fn parse_array_initialization(&mut self) -> Result<Vec<Expression>, ()> {
+        let mut expressions = vec![];
+        self.match_and_consume(TokenType::Lbrace, true)?;
+        expressions.push(self.parse_expression()?);
+        while self.match_token(TokenType::Comma) {
+            self.consume(1);
+            expressions.push(self.parse_expression()?);
+        }
+        self.match_and_consume(TokenType::Rbrace, true)?;
+        Ok(expressions)
+    }
     fn parse_function_declaration(&mut self) -> Result<Declaration, ()> {
         let type_specifier = self.parse_type_specifier()?;
         let id_token = self.match_and_consume(TokenType::Id, true)?;

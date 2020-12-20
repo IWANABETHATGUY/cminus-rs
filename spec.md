@@ -2,8 +2,10 @@
 - program -> declaration-list  
 - declaration-list -> declaration-list | declaration  
 - declaration -> var-declaration | function-declaration  
-- var-declaration -> type-specifier **ID** initializer; | type-specifier **ID** [**NUM**];  
+- var-declaration -> type-specifier **ID** initializer; | type-specifier **ID** [**NUM**] array-initializer;  
 - initializer -> = expression | ε
+- array-initializer -> = {array-init-list} | ε
+- array-init-list -> array-init-list, expression | expression
 - type-specifier -> **int** | **VOID** | **bool** 
 - fun-declaration -> type-specifier **ID** (params) compound-statement 
 - params -> param-list | **ε**
