@@ -10,7 +10,7 @@ use std::{fs::read_to_string};
 
 use std::path;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/parser/test.txt");
+    let path = path::Path::new("tests/fixtures/interpreter/bubble_sort.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
