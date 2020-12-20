@@ -44,6 +44,7 @@ pub struct VarDeclaration {
     pub(crate) id: Identifier,
     pub(crate) num: Option<NumberLiteral>,
     pub(crate) initializer: Option<Expression>,
+    pub(crate) array_initializer: Option<Vec<Expression>>,
 }
 impl Walk for VarDeclaration {
     fn walk(&self, level: usize) -> String {
@@ -53,7 +54,16 @@ impl Walk for VarDeclaration {
             children.push(num.walk(level + 1));
         }
         if let Some(ref initializer) = self.initializer {
-            children.push(format!("{}<Initializer>", " ".repeat(2 * (level + 1))) + &initializer.walk(level + 1).trim_start());
+            children.push(
+                format!("{}<Initializer>", " ".repeat(2 * (level + 1)))
+                    + &initializer.walk(level + 1).trim_start(),
+            );
+        }
+        if let Some(ref initializer) = self.array_initializer {
+            children.push(format!("{}<Initializer>", " ".repeat(2 * (level + 1))));
+            for init in initializer {
+                children.push(init.walk(level + 2));
+            }
         }
         ast + &children.join("\n")
     }
