@@ -1,28 +1,45 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hello wasm-pack!</title>
+    <style>
+      .ͼ1 {
+        height: 100%;
+      }
+      #control-container {
+        width: 50%;
+        display: flex;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <title>Hello wasm-pack!</title>
-  <style>
-    .ͼ1 {
-      height: 100%;
-    }
-  </style>
-</head>
-
-<body>
-
- 
-  <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-  <button id="tokenize_button">tokenize</button>
-  <button id="parse_button">parse</button>
-  <button id="interpret_button">interpret</button>
-  <div class="container" style="display: flex;height: calc(100vh - 40px);">
-    <div id="editor" style="width: 50%; h"></div>
-    <textarea id="result" readonly style="width: 50%; height:100%" rows="30"></textarea>
-  </div>
-  <script src="./bootstrap.js"></script>
-</body>
-
+  <body>
+    <noscript
+      >This page contains webassembly and javascript content, please enable
+      javascript in your browser.</noscript
+    >
+    <div id="control-container">
+      <div class="button-group">
+        <button id="tokenize_button">tokenize</button>
+        <button id="parse_button">parse</button>
+        <button id="interpret_button">interpret</button>
+      </div>
+      <select id="code-select">
+        <option value="bubble-sort">bubble-sort</option>
+        <option value="fibonacci" selected>fibonacci</option>
+      </select>
+    </div>
+    <div class="container" style="display: flex; height: calc(100vh - 40px)">
+      <div id="editor" style="width: 50%"></div>
+      <textarea
+        id="result"
+        readonly
+        style="width: 50%; height: 100%"
+        rows="30"
+      ></textarea>
+    </div>
+    <script src="./bootstrap.js"></script>
+  </body>
 </html>
