@@ -5,13 +5,12 @@ name = "tinylang-rs"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 codespan-reporting = "0.9"
 enum-as-inner = "0.3.3"
 fxhash = "0.2.1"
 hashbrown = "0.9"
-serde = {version = "1.0", features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 [dev-dependencies]

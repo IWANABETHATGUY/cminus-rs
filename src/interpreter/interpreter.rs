@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
-use super::{env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType, Scope}, println};
+use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
 use crate::parser::ast::*;
 use fxhash::FxHashMap;
+
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
