@@ -3,9 +3,15 @@ pub trait Walk {
     fn walk(&self, level: usize) -> String;
 }
 
+pub trait Codespan {
+    fn start(&self) -> usize;
+    fn end(&self) -> usize;
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for Program {
     fn walk(&self, level: usize) -> String {
@@ -24,6 +30,8 @@ pub struct FunctionDeclaration {
     pub(crate) id: Identifier,
     pub(crate) params: Params,
     pub(crate) body: CompoundStatement,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for FunctionDeclaration {
     fn walk(&self, level: usize) -> String {
@@ -45,6 +53,8 @@ pub struct VarDeclaration {
     pub(crate) num: Option<NumberLiteral>,
     pub(crate) initializer: Option<Expression>,
     pub(crate) array_initializer: Option<Vec<Expression>>,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for VarDeclaration {
     fn walk(&self, level: usize) -> String {
@@ -81,9 +91,26 @@ impl Walk for Declaration {
         }
     }
 }
+impl Codespan for Declaration {
+    fn start(&self) -> usize {
+        match self {
+            Declaration::FunctionDeclaration(decl) => decl.start,
+            Declaration::VarDeclaration(decl) => decl.start,
+        }
+    }
+
+    fn end(&self) -> usize {
+        match self {
+            Declaration::FunctionDeclaration(decl) => decl.end,
+            Declaration::VarDeclaration(decl) => decl.end,
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct Identifier {
     pub(crate) value: String,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for Identifier {
     fn walk(&self, level: usize) -> String {
@@ -93,6 +120,8 @@ impl Walk for Identifier {
 #[derive(Debug, Clone, Serialize)]
 pub struct NumberLiteral {
     pub(crate) value: i32,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for NumberLiteral {
     fn walk(&self, level: usize) -> String {
@@ -102,6 +131,8 @@ impl Walk for NumberLiteral {
 #[derive(Debug, Clone, Serialize)]
 pub struct BooleanLiteral {
     pub(crate) value: bool,
+    pub start: usize,
+    pub end: usize,
 }
 impl Walk for BooleanLiteral {
     fn walk(&self, level: usize) -> String {
@@ -111,6 +142,8 @@ impl Walk for BooleanLiteral {
 #[derive(Debug, Clone, Serialize)]
 pub struct TypeSpecifier {
     pub(crate) kind: TypeSpecifierKind,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for TypeSpecifier {
@@ -124,6 +157,7 @@ pub(crate) enum TypeSpecifierKind {
     Void,
     Boolean,
 }
+
 #[derive(Debug, Clone, Serialize)]
 pub enum Params {
     Void,
@@ -157,6 +191,8 @@ pub struct Parameter {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
     pub(crate) is_array: bool,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for Parameter {
@@ -175,6 +211,8 @@ impl Walk for Parameter {
 pub struct CompoundStatement {
     pub(crate) local_declaration: Vec<VarDeclaration>,
     pub(crate) statement_list: Vec<Statement>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for CompoundStatement {
@@ -225,11 +263,34 @@ impl Walk for Statement {
         }
     }
 }
+impl Codespan for Statement {
+    fn start(&self) -> usize {
+        match self {
+            Statement::CompoundStatement(stmt) => stmt.start,
+            Statement::ExpressionStatement(stmt) => stmt.start,
+            Statement::SelectionStatement(stmt) => stmt.start,
+            Statement::IterationStatement(stmt) => stmt.start,
+            Statement::ReturnStatement(stmt) => stmt.start,
+        }
+    }
+
+    fn end(&self) -> usize {
+        match self {
+            Statement::CompoundStatement(stmt) => stmt.end,
+            Statement::ExpressionStatement(stmt) => stmt.end,
+            Statement::SelectionStatement(stmt) => stmt.end,
+            Statement::IterationStatement(stmt) => stmt.end,
+            Statement::ReturnStatement(stmt) => stmt.end,
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct SelectionStatement {
     pub(crate) test: Expression,
     pub(crate) consequent: Box<Statement>,
     pub(crate) alternative: Option<Box<Statement>>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for SelectionStatement {
@@ -250,6 +311,8 @@ impl Walk for SelectionStatement {
 pub struct IterationStatement {
     pub(crate) test: Expression,
     pub(crate) body: Box<Statement>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for IterationStatement {
@@ -266,6 +329,8 @@ impl Walk for IterationStatement {
 #[derive(Debug, Clone, Serialize)]
 pub struct ReturnStatement {
     pub(crate) expression: Option<Expression>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for ReturnStatement {
@@ -280,6 +345,8 @@ impl Walk for ReturnStatement {
 #[derive(Debug, Clone, Serialize)]
 pub struct ExpressionStatement {
     pub(crate) expression: Option<Expression>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for ExpressionStatement {
@@ -319,10 +386,30 @@ impl Walk for Expression {
         }
     }
 }
+
+impl Codespan for Expression {
+    fn start(&self) -> usize {
+        match self {
+            Expression::Assignment(expr) => expr.start,
+            Expression::BinaryExpression(expr) => expr.start,
+            Expression::Factor(expr) => expr.start(),
+        }
+    }
+
+    fn end(&self) -> usize {
+        match self {
+            Expression::Assignment(expr) => expr.end,
+            Expression::BinaryExpression(expr) => expr.end,
+            Expression::Factor(expr) => expr.end(),
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct AssignmentExpression {
     pub(crate) lhs: Var,
     pub(crate) rhs: Box<Expression>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for AssignmentExpression {
@@ -335,6 +422,8 @@ impl Walk for AssignmentExpression {
 pub struct Var {
     pub(crate) id: Identifier,
     pub(crate) expression: Option<Box<Expression>>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for Var {
@@ -348,6 +437,8 @@ pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
     pub(crate) operation: Operation,
+    pub start: usize,
+    pub end: usize,
 }
 #[derive(Debug, Clone, Serialize)]
 pub enum Operation {
@@ -388,10 +479,34 @@ impl Walk for Factor {
         }
     }
 }
+
+impl Codespan for Factor {
+    fn start(&self) -> usize {
+        match self {
+            Factor::Expression(expr) => expr.start(),
+            Factor::Var(var) => var.start,
+            Factor::CallExpression(call_expression) => call_expression.start,
+            Factor::NumberLiteral(num) => num.start,
+            Factor::BooleanLiteral(boolean) => boolean.start,
+        }
+    }
+
+    fn end(&self) -> usize {
+        match self {
+            Factor::Expression(expr) => expr.end(),
+            Factor::Var(var) => var.end,
+            Factor::CallExpression(call_expression) => call_expression.end,
+            Factor::NumberLiteral(num) => num.end,
+            Factor::BooleanLiteral(boolean) => boolean.end,
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize)]
 pub struct CallExpression {
     pub(crate) id: Identifier,
     pub(crate) arguments: Vec<Expression>,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Walk for CallExpression {
