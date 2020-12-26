@@ -51,13 +51,15 @@ impl<'a> Parser<'a> {
     }
     fn match_rel_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
+            let start = token.start_index;
+            let end = token.end_index;
             match token.token_type {
-                TokenType::Le => return Some(Operation::LE),
-                TokenType::Ge => return Some(Operation::GE),
-                TokenType::Gt => return Some(Operation::GT),
-                TokenType::Lt => return Some(Operation::LT),
-                TokenType::Eq => return Some(Operation::EQ),
-                TokenType::Ne => return Some(Operation::NE),
+                TokenType::Le => return Some(Operation::LE(start, end)),
+                TokenType::Ge => return Some(Operation::GE(start, end)),
+                TokenType::Gt => return Some(Operation::GT(start, end)),
+                TokenType::Lt => return Some(Operation::LT(start, end)),
+                TokenType::Eq => return Some(Operation::EQ(start, end)),
+                TokenType::Ne => return Some(Operation::NE(start, end)),
                 _ => return None,
             }
         }
@@ -65,9 +67,11 @@ impl<'a> Parser<'a> {
     }
     fn match_add_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
+            let start = token.start_index;
+            let end = token.end_index;
             match token.token_type {
-                TokenType::Plus => return Some(Operation::PLUS),
-                TokenType::Minus => return Some(Operation::MINUS),
+                TokenType::Plus => return Some(Operation::PLUS(start, end)),
+                TokenType::Minus => return Some(Operation::MINUS(start, end)),
                 _ => return None,
             }
         }
@@ -75,9 +79,11 @@ impl<'a> Parser<'a> {
     }
     fn match_mul_op(&mut self) -> Option<Operation> {
         if let Some(token) = self.next_token() {
+            let start = token.start_index;
+            let end = token.end_index;
             match token.token_type {
-                TokenType::Multiply => return Some(Operation::MULTIPLY),
-                TokenType::Times => return Some(Operation::DIVIDE),
+                TokenType::Multiply => return Some(Operation::MULTIPLY(start, end)),
+                TokenType::Times => return Some(Operation::DIVIDE(start, end)),
                 _ => return None,
             }
         }
@@ -384,7 +390,6 @@ impl<'a> Parser<'a> {
         if expression.is_none() {
             start = semi_token.start_index;
             end = semi_token.end_index;
-
         }
         Ok(Statement::ExpressionStatement(ExpressionStatement {
             expression,

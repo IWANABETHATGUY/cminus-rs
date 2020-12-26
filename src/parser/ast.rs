@@ -1,4 +1,4 @@
-use std::fmt::format;
+use std::fmt::{format, Display};
 
 use codespan_drive::CodeSpan;
 use serde::Serialize;
@@ -227,10 +227,7 @@ impl Walk for Params {
                 generate_codespan_postfix(self)
             ),
             Params::ParamsList { params } => {
-                let ast = format!(
-                    "{}ParameterList",
-                    " ".repeat(2 * level),
-                );
+                let ast = format!("{}ParameterList", " ".repeat(2 * level),);
                 if !params.is_empty() {
                     ast + "\n"
                         + &params
@@ -528,21 +525,92 @@ pub struct BinaryExpression {
 }
 #[derive(Debug, Clone, Serialize)]
 pub enum Operation {
-    GT,
-    LT,
-    GE,
-    LE,
-    EQ,
-    NE,
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
+    GT(usize, usize),
+    LT(usize, usize),
+    GE(usize, usize),
+    LE(usize, usize),
+    EQ(usize, usize),
+    NE(usize, usize),
+    PLUS(usize, usize),
+    MINUS(usize, usize),
+    MULTIPLY(usize, usize),
+    DIVIDE(usize, usize),
 }
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operation::GT(_, _) => {
+                write!(f, "GT")
+            }
+            Operation::LT(_, _) => {
+                write!(f, "LT")
+            }
+            Operation::GE(_, _) => {
+                write!(f, "GE")
+            }
+            Operation::LE(_, _) => {
+                write!(f, "LE")
+            }
+            Operation::EQ(_, _) => {
+                write!(f, "EQ")
+            }
+            Operation::NE(_, _) => {
+                write!(f, "NE")
+            }
+            Operation::PLUS(_, _) => {
+                write!(f, "PLUS")
+            }
+            Operation::MINUS(_, _) => {
+                write!(f, "MINUS")
+            }
+            Operation::MULTIPLY(_, _) => {
+                write!(f, "MULTIPLY")
+            }
+            Operation::DIVIDE(_, _) => {
+                write!(f, "DIVIDE")
+            }
+        }
+    }
+}
+impl Codespan for Operation {
+    fn start(&self) -> usize {
+        match self {
+            Operation::GT(start, _) => *start,
+            Operation::LT(start, _) => *start,
+            Operation::GE(start, _) => *start,
+            Operation::LE(start, _) => *start,
+            Operation::EQ(start, _) => *start,
+            Operation::NE(start, _) => *start,
+            Operation::PLUS(start, _) => *start,
+            Operation::MINUS(start, _) => *start,
+            Operation::MULTIPLY(start, _) => *start,
+            Operation::DIVIDE(start, _) => *start,
+        }
+    }
 
+    fn end(&self) -> usize {
+        match self {
+            Operation::GT(_, end) => *end,
+            Operation::LT(_, end) => *end,
+            Operation::GE(_, end) => *end,
+            Operation::LE(_, end) => *end,
+            Operation::EQ(_, end) => *end,
+            Operation::NE(_, end) => *end,
+            Operation::PLUS(_, end) => *end,
+            Operation::MINUS(_, end) => *end,
+            Operation::MULTIPLY(_, end) => *end,
+            Operation::DIVIDE(_, end) => *end,
+        }
+    }
+}
 impl Walk for Operation {
     fn walk(&self, level: usize) -> String {
-        format!("{}{:?}", " ".repeat(2 * level), self)
+        format!(
+            "{}{} {}",
+            " ".repeat(2 * level),
+            self,
+            generate_codespan_postfix(self)
+        )
     }
 }
 #[derive(Debug, Clone, Serialize)]
