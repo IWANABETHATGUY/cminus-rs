@@ -120,11 +120,17 @@ impl<'a> Parser<'a> {
     }
     pub fn parse_program(&mut self) -> Result<Program, ()> {
         let mut declarations = vec![];
+        let mut end = 0;
         while self.cursor < self.token_list.len() {
             let declaration = self.parse_declaration()?;
+            end = declaration.end();
             declarations.push(declaration);
         }
-        Ok(Program { declarations })
+        Ok(Program {
+            declarations,
+            start: 0,
+            end,
+        })
     }
 
     fn parse_declaration(&mut self) -> Result<Declaration, ()> {
@@ -157,6 +163,8 @@ impl<'a> Parser<'a> {
         let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
+            start: id_token.start_index,
+            end: id_token.end_index,
         };
         let mut num = None;
         let mut array_initializer = None;
@@ -173,7 +181,11 @@ impl<'a> Parser<'a> {
                 );
                 return Err(());
             };
-            num = Some(NumberLiteral { value });
+            num = Some(NumberLiteral {
+                value,
+                start: num_token.start_index,
+                end: num_token.end_index,
+            });
             self.match_and_consume(TokenType::Rbrack, true)?;
         }
         let mut initializer = None;
@@ -185,13 +197,15 @@ impl<'a> Parser<'a> {
                 initializer = Some(self.parse_expression()?);
             }
         }
-        self.match_and_consume(TokenType::Semi, true)?;
+        let end = (self.match_and_consume(TokenType::Semi, true)?).end_index;
         Ok(Declaration::VarDeclaration(VarDeclaration {
+            start: type_specifier.start,
+            end,
             type_specifier,
             id: identifier,
-            num,
             initializer,
             array_initializer,
+            num,
         }))
     }
     fn parse_array_initialization(&mut self) -> Result<Vec<Expression>, ()> {
@@ -211,6 +225,8 @@ impl<'a> Parser<'a> {
         let mut params: Params = Params::Void;
         let identifier = Identifier {
             value: id_token.content,
+            start: id_token.start_index,
+            end: id_token.end_index,
         };
         self.match_and_consume(TokenType::Lparen, true)?;
         match self.next_token() {
@@ -239,15 +255,17 @@ impl<'a> Parser<'a> {
         self.match_and_consume(TokenType::Rparen, true)?;
         let body = self.parse_compound_statement()?;
         Ok(Declaration::FunctionDeclaration(FunctionDeclaration {
-            type_specifier,
+            start: type_specifier.start,
+            end: body.end,
             id: identifier,
+            type_specifier,
             params,
             body,
         }))
     }
 
     fn parse_compound_statement(&mut self) -> Result<CompoundStatement, ()> {
-        self.match_and_consume(TokenType::Lbrace, true)?;
+        let start = (self.match_and_consume(TokenType::Lbrace, true)?).start_index;
         let mut local_declaration = vec![];
         let mut statement_list = vec![];
         while self.match_type_specifier() {
@@ -273,10 +291,12 @@ impl<'a> Parser<'a> {
         while !self.match_token(TokenType::Rbrace) {
             statement_list.push(self.parse_statement()?);
         }
-        self.match_and_consume(TokenType::Rbrace, true)?;
+        let end = (self.match_and_consume(TokenType::Rbrace, true)?).end_index;
         Ok(CompoundStatement {
             local_declaration,
             statement_list,
+            start,
+            end,
         })
     }
     fn parse_statement(&mut self) -> Result<Statement, ()> {
@@ -303,23 +323,29 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_iteration_statement(&mut self) -> Result<IterationStatement, ()> {
-        self.match_and_consume(TokenType::Keyword(KeywordType::WHILE), true)?;
+        let start =
+            (self.match_and_consume(TokenType::Keyword(KeywordType::WHILE), true)?).start_index;
         let expression = self.parse_expression()?;
         let body = Box::new(self.parse_statement()?);
         Ok(IterationStatement {
+            start,
+            end: body.end(),
             test: expression,
             body,
         })
     }
     fn parse_selection_statement(&mut self) -> Result<SelectionStatement, ()> {
-        self.match_and_consume(TokenType::Keyword(KeywordType::IF), true)?;
+        let start =
+            (self.match_and_consume(TokenType::Keyword(KeywordType::IF), true)?).start_index;
         self.match_and_consume(TokenType::Lparen, true)?;
         let test = self.parse_expression()?;
-        self.match_and_consume(TokenType::Rparen, true)?;
+        let mut end = (self.match_and_consume(TokenType::Rparen, true)?).end_index;
         let consequent = Box::new(self.parse_statement()?);
         let alternative = if self.match_token(TokenType::Keyword(KeywordType::ELSE)) {
             self.consume(1);
-            Some(Box::new(self.parse_statement()?))
+            let statement = self.parse_statement()?;
+            end = statement.end();
+            Some(Box::new(statement))
         } else {
             None
         };
@@ -327,39 +353,65 @@ impl<'a> Parser<'a> {
             consequent,
             alternative,
             test,
+            start,
+            end,
         })
     }
     fn parse_return_statement(&mut self) -> Result<ReturnStatement, ()> {
-        self.match_and_consume(TokenType::Keyword(KeywordType::RETURN), true)?;
+        let start =
+            (self.match_and_consume(TokenType::Keyword(KeywordType::RETURN), true)?).start_index;
         let mut expression = None;
         if !self.match_token(TokenType::Semi) {
             expression = Some(self.parse_expression()?);
         }
-        self.match_and_consume(TokenType::Semi, true)?;
-        Ok(ReturnStatement { expression })
+        let end = (self.match_and_consume(TokenType::Semi, true)?).end_index;
+        Ok(ReturnStatement {
+            expression,
+            start,
+            end,
+        })
     }
     fn parse_expression_statement(&mut self) -> Result<Statement, ()> {
         let mut expression = None;
+        let (mut start, mut end) = (0, 0);
         if !self.match_token(TokenType::Semi) {
-            expression = Some(self.parse_expression()?);
+            let expr = self.parse_expression()?;
+            start = expr.start();
+            end = expr.end();
+            expression = Some(expr);
         }
-        self.match_and_consume(TokenType::Semi, true)?;
+        let semi_token = self.match_and_consume(TokenType::Semi, true)?;
+        if expression.is_none() {
+            start = semi_token.start_index;
+            end = semi_token.end_index;
+
+        }
         Ok(Statement::ExpressionStatement(ExpressionStatement {
             expression,
+            start,
+            end,
         }))
     }
 
     fn parse_var(&mut self) -> Result<Var, ()> {
         let id = self.match_and_consume(TokenType::Id, true)?;
         let mut expression = None;
-        if self.match_token(TokenType::Lbrack) {
+        let end = if self.match_token(TokenType::Lbrack) {
             self.consume(1);
             expression = Some(Box::new(self.parse_expression()?));
-            self.match_and_consume(TokenType::Rbrack, true)?;
-        }
+            (self.match_and_consume(TokenType::Rbrack, true)?).end_index
+        } else {
+            id.end_index
+        };
         Ok(Var {
             expression,
-            id: Identifier { value: id.content },
+            id: Identifier {
+                value: id.content,
+                start: id.start_index,
+                end: id.end_index,
+            },
+            start: id.start_index,
+            end,
         })
     }
     fn parse_assignment_expression(&mut self) -> Result<Expression, ()> {
@@ -367,6 +419,8 @@ impl<'a> Parser<'a> {
         self.match_and_consume(TokenType::Assign, true)?;
         let expression = self.parse_expression()?;
         Ok(Expression::Assignment(AssignmentExpression {
+            start: var.start,
+            end: expression.end(),
             lhs: var,
             rhs: Box::new(expression),
         }))
@@ -409,6 +463,8 @@ impl<'a> Parser<'a> {
             self.consume(1);
             let right_expr = self.parse_additive_expression()?;
             return Ok(Expression::BinaryExpression(BinaryExpression {
+                start: left_expr.start(),
+                end: right_expr.end(),
                 left: Box::new(left_expr),
                 right: Box::new(right_expr),
                 operation: op,
@@ -425,6 +481,8 @@ impl<'a> Parser<'a> {
                 self.consume(1);
                 let right_term = self.parse_term()?;
                 left_term = Expression::BinaryExpression(BinaryExpression {
+                    start: left_term.start(),
+                    end: right_term.end(),
                     left: Box::new(left_term),
                     right: Box::new(right_term),
                     operation,
@@ -441,6 +499,8 @@ impl<'a> Parser<'a> {
                 self.consume(1);
                 let right_factor = self.parse_factor()?;
                 left_factor = Expression::BinaryExpression(BinaryExpression {
+                    start: left_factor.start(),
+                    end: right_factor.end(),
                     left: Box::new(left_factor),
                     right: Box::new(right_factor),
                     operation,
@@ -454,6 +514,8 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
             let range = token.range();
+            let mut start = token.start_index;
+            let mut end = token.end_index;
             match token.token_type {
                 TokenType::NumberLiteral => {
                     self.consume(1);
@@ -469,12 +531,16 @@ impl<'a> Parser<'a> {
                     };
                     return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
                         value,
+                        start,
+                        end,
                     })));
                 }
                 TokenType::BooleanLiteral => {
                     self.consume(1);
                     return Ok(Expression::Factor(Factor::BooleanLiteral(BooleanLiteral {
                         value: content.parse::<bool>().unwrap(),
+                        start,
+                        end,
                     })));
                 }
                 TokenType::Lparen => {
@@ -491,35 +557,43 @@ impl<'a> Parser<'a> {
                             TokenType::Lparen => {
                                 self.consume(1);
                                 let arguments = self.parse_args()?;
-                                self.match_and_consume(TokenType::Rparen, true)?;
+                                end = (self.match_and_consume(TokenType::Rparen, true)?).end_index;
                                 return Ok(Expression::Factor(Factor::CallExpression(
                                     CallExpression {
                                         arguments,
-                                        id: Identifier { value },
+                                        id: Identifier { value, start, end },
+                                        start,
+                                        end,
                                     },
                                 )));
                             }
                             TokenType::Lbrack => {
                                 self.consume(1);
                                 let local_expression = self.parse_expression()?;
-                                self.match_and_consume(TokenType::Rbrack, true)?;
+                                end = (self.match_and_consume(TokenType::Rbrack, true)?).end_index;
                                 let var = Var {
-                                    id: Identifier { value },
+                                    id: Identifier { value, start, end },
                                     expression: Some(Box::new(local_expression)),
+                                    start,
+                                    end,
                                 };
                                 return Ok(Expression::Factor(Factor::Var(var)));
                             }
                             _ => {
                                 return Ok(Expression::Factor(Factor::Var(Var {
                                     expression: None,
-                                    id: Identifier { value },
+                                    id: Identifier { value, start, end },
+                                    start,
+                                    end,
                                 })));
                             }
                         }
                     } else {
                         return Ok(Expression::Factor(Factor::Var(Var {
                             expression: None,
-                            id: Identifier { value },
+                            id: Identifier { value, start, end },
+                            start,
+                            end,
                         })));
                     }
                 }
@@ -559,14 +633,22 @@ impl<'a> Parser<'a> {
         let id_token = self.match_and_consume(TokenType::Id, true)?;
         let identifier = Identifier {
             value: id_token.content,
+            start: id_token.start_index,
+            end: id_token.end_index,
         };
         let mut is_array = false;
-        if self.match_token(TokenType::Lbrack) {
+        let end = if self.match_token(TokenType::Lbrack) {
+            let end: usize;
             self.match_and_consume(TokenType::Lbrack, true)?;
-            self.match_and_consume(TokenType::Rbrack, true)?;
+            end = (self.match_and_consume(TokenType::Rbrack, true)?).end_index;
             is_array = true;
-        }
+            end
+        } else {
+            type_specifier.end
+        };
         Ok(Parameter {
+            start: type_specifier.start,
+            end,
             type_specifier,
             id: identifier,
             is_array,
@@ -574,23 +656,31 @@ impl<'a> Parser<'a> {
     }
     fn parse_type_specifier(&mut self) -> Result<TypeSpecifier, ()> {
         if let Some(token) = self.next_token() {
+            let start = token.start_index;
+            let end = token.end_index;
             match token.token_type {
                 TokenType::Keyword(KeywordType::INT) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Int,
+                        start,
+                        end,
                     });
                 }
                 TokenType::Keyword(KeywordType::VOID) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Void,
+                        start,
+                        end,
                     });
                 }
                 TokenType::Keyword(KeywordType::BOOL) => {
                     self.consume(1);
                     return Ok(TypeSpecifier {
                         kind: TypeSpecifierKind::Boolean,
+                        start,
+                        end,
                     });
                 }
                 _ => {

@@ -3,3 +3,4 @@ pub mod error;
 pub(crate) mod ast;
 
 pub use ast::Walk;
+pub use ast::Codespan;
