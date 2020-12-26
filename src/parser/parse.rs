@@ -120,14 +120,16 @@ impl<'a> Parser<'a> {
     }
     pub fn parse_program(&mut self) -> Result<Program, ()> {
         let mut declarations = vec![];
+        let mut end = 0;
         while self.cursor < self.token_list.len() {
             let declaration = self.parse_declaration()?;
+            end = declaration.end();
             declarations.push(declaration);
         }
         Ok(Program {
             declarations,
             start: 0,
-            end: 0,
+            end,
         })
     }
 
