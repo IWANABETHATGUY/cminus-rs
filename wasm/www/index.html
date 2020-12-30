@@ -12,6 +12,17 @@
         display: flex;
         justify-content: space-between;
       }
+      .ast-node {
+        list-style: none;
+        padding-left: 20px;
+        margin-top: 0;
+      }
+      .ast-node.highlight {
+        background: #eee;
+      }
+      .ast-child {
+        list-style: none;
+      }
     </style>
   </head>
 
@@ -33,6 +44,10 @@
     </div>
     <div class="container" style="display: flex; height: calc(100vh - 40px)">
       <div id="editor" style="width: 50%"></div>
+      <div
+        id="interactive-ast"
+        style="display: none; width: 50%; height: 100%"
+      ></div>
       <textarea
         id="result"
         readonly

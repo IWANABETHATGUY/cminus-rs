@@ -345,8 +345,9 @@ impl<'a> Parser<'a> {
             (self.match_and_consume(TokenType::Keyword(KeywordType::IF), true)?).start_index;
         self.match_and_consume(TokenType::Lparen, true)?;
         let test = self.parse_expression()?;
-        let mut end = (self.match_and_consume(TokenType::Rparen, true)?).end_index;
+        self.match_and_consume(TokenType::Rparen, true)?;
         let consequent = Box::new(self.parse_statement()?);
+        let mut end = consequent.end();
         let alternative = if self.match_token(TokenType::Keyword(KeywordType::ELSE)) {
             self.consume(1);
             let statement = self.parse_statement()?;
