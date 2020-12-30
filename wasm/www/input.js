@@ -4,6 +4,7 @@ import { cpp } from '@codemirror/next/lang-cpp';
 import { EditorView, basicSetup } from '@codemirror/next/basic-setup';
 import { tagExtension } from '@codemirror/next/state';
 import code from './code.js';
+import { astStringToAst } from './ast';
 const languageTag = Symbol('language');
 
 const editor = new EditorView({
@@ -26,6 +27,7 @@ const result = document.getElementById('result');
 
 parse_button.addEventListener('click', function () {
   const parserResult = parse(editor.state.doc.text.join('\n'));
+  console.log(astStringToAst(parserResult));
   result.textContent = parserResult;
 });
 
