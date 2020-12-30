@@ -520,8 +520,8 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
             let range = token.range();
-            let mut start = token.start_index;
-            let mut end = token.end_index;
+            let start = token.start_index;
+            let end = token.end_index;
             match token.token_type {
                 TokenType::NumberLiteral => {
                     self.consume(1);
@@ -563,25 +563,27 @@ impl<'a> Parser<'a> {
                             TokenType::Lparen => {
                                 self.consume(1);
                                 let arguments = self.parse_args()?;
-                                end = (self.match_and_consume(TokenType::Rparen, true)?).end_index;
+                                let call_expression_end =
+                                    (self.match_and_consume(TokenType::Rparen, true)?).end_index;
                                 return Ok(Expression::Factor(Factor::CallExpression(
                                     CallExpression {
                                         arguments,
                                         id: Identifier { value, start, end },
                                         start,
-                                        end,
+                                        end: call_expression_end,
                                     },
                                 )));
                             }
                             TokenType::Lbrack => {
                                 self.consume(1);
                                 let local_expression = self.parse_expression()?;
-                                end = (self.match_and_consume(TokenType::Rbrack, true)?).end_index;
+                                let var_end =
+                                    (self.match_and_consume(TokenType::Rbrack, true)?).end_index;
                                 let var = Var {
                                     id: Identifier { value, start, end },
                                     expression: Some(Box::new(local_expression)),
                                     start,
-                                    end,
+                                    end: var_end,
                                 };
                                 return Ok(Expression::Factor(Factor::Var(var)));
                             }
@@ -650,7 +652,7 @@ impl<'a> Parser<'a> {
             is_array = true;
             end
         } else {
-            type_specifier.end
+            id_token.end_index
         };
         Ok(Parameter {
             start: type_specifier.start,
