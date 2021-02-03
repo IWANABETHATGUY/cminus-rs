@@ -11,7 +11,7 @@ mod interpreter;
 
 pub fn interpret(program: &mut Program, std_io: bool) -> Result<Environment, ()> {
     let mut env = env::Environment {
-        scope_stack: vec![fxhash::FxHashMap::default()],
+        scope_stack: vec![rustc_hash::FxHashMap::default()],
         call_expression_binding: Vec::new(),
         std_io,
         std_simulator: vec![],
