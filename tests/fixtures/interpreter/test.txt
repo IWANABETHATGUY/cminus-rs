@@ -6,5 +6,6 @@ int fibonacci(int a) {
 }
 
 void main() {
-  println(fibonacci(30));
+  int a = 2;
+  a = false;
 }
