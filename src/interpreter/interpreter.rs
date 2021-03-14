@@ -35,7 +35,7 @@ impl Evaluate for Declaration {
                 env.define(
                     func.id.value.clone(),
                     Binding::FunctionDeclaration(std::rc::Rc::new(func.clone())),
-                );
+                )?;
             }
             Declaration::VarDeclaration(var) => {
                 var.evaluate(env)?;
@@ -104,7 +104,7 @@ impl VarDeclaration {
                                 .get_initialized_array(env, &self.type_specifier.kind, length)?
                                 .into_iter()
                                 .map(|item| match item {
-                                    LiteralType::Boolean(n) => {
+                                    LiteralType::Boolean(_) => {
                                         unreachable!();
                                     }
                                     LiteralType::Number(n) => n,
@@ -124,7 +124,7 @@ impl VarDeclaration {
                                 .into_iter()
                                 .map(|item| match item {
                                     LiteralType::Boolean(n) => n,
-                                    LiteralType::Number(n) => {
+                                    LiteralType::Number(_) => {
                                         unreachable!();
                                     }
                                 })
@@ -281,7 +281,7 @@ impl CompoundStatement {
     pub fn evaluate(&self, env: &mut Environment) -> Result<Option<Binding>, ()> {
         // before every callExpression we add the binding to env.call_expression_binging, after every compoundStatement we
         // extend the params binding and clear the env.call_expression binding
-        let mut scope = {
+        let scope = {
             let mut map = FxHashMap::default();
             while let Some((string, binding)) = env.call_expression_binding.pop() {
                 map.insert(string, binding);
@@ -482,7 +482,6 @@ impl Evaluate for Factor {
                                     ArrayType::Number { array, .. } => {
                                         Ok(Binding::NumberLiteral(array.borrow()[index as usize]))
                                     }
-                                    _ => Err(()),
                                 },
                                 _ => {
                                     panic!("only array type can be indexed");

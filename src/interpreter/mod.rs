@@ -1,7 +1,6 @@
 use crate::parser::ast::*;
 
 use self::{
-    env::LiteralType,
     env::{Binding, Environment},
     interpreter::Evaluate,
 };

@@ -6,7 +6,7 @@ mod lexer;
 mod parser;
 use lexer::lex::Lexer;
 mod util;
-use parser::{parse::Parser, Walk};
+use parser::parse::Parser;
 use std::{fs::read_to_string, time::Instant};
 
 use std::path;

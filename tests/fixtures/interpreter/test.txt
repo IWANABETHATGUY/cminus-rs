@@ -1,10 +1,10 @@
 int fibonacci(int a) {
   if (a <= 2) {
-    return 1;
+    return a;
   }
   return fibonacci(a - 1) + fibonacci(a - 2);
 }
 
 void main() {
-  int a = 2;
+  print(fibonacci(30));
 }

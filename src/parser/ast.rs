@@ -1,4 +1,4 @@
-use std::fmt::{format, Display};
+use std::fmt::Display;
 
 use codespan_drive::CodeSpan;
 use serde::Serialize;
@@ -203,7 +203,7 @@ impl Codespan for Params {
     fn start(&self) -> usize {
         match self {
             Params::Void => self.start(),
-            Params::ParamsList { params } => {
+            Params::ParamsList { .. } => {
                 unreachable!()
             }
         }
@@ -212,7 +212,7 @@ impl Codespan for Params {
     fn end(&self) -> usize {
         match self {
             Params::Void => self.end(),
-            Params::ParamsList { params } => {
+            Params::ParamsList { .. } => {
                 unreachable!()
             }
         }

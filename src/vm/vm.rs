@@ -1,8 +1,8 @@
 use super::op_code::disassemble_instruction;
 use super::{op_code::OpCode, value::Value};
+use crate::util::variant_eq;
 
 pub struct Vm {
-    constant_pool: Vec<f64>,
     operations: Vec<OpCode>,
     line_number: Vec<usize>,
     stack: Vec<Value>,
@@ -11,7 +11,6 @@ pub struct Vm {
 impl Vm {
     pub fn new() -> Self {
         Self {
-            constant_pool: vec![],
             operations: vec![],
             line_number: vec![],
             stack: vec![],
@@ -48,6 +47,51 @@ impl Vm {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     self.stack.push(a / b);
+                }
+                OpCode::ConstantBoolean(b) => {
+                    self.stack.push(Boolean(*b));
+                }
+                OpCode::Equal => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
+                    self.stack.push(res);
+                }
+                OpCode::NotEqual => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a != b);
+                    self.stack.push(res);
+                }
+                OpCode::Greater => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
+                    self.stack.push(res);
+                }
+                OpCode::Less => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
+                    self.stack.push(res);
+                }
+                OpCode::GreaterEqual => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
+                    self.stack.push(res);
+                }
+                OpCode::LessEqual => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
+                    self.stack.push(res);
                 }
             }
             // DEBUG: start
@@ -110,12 +154,11 @@ mod test_vm {
         // expression
         let mut vm = Vm::new();
         vm.add_operation(OpCode::ConstantI32(2), 0);
-        vm.add_operation(OpCode::ConstantI32(4),  0);
+        vm.add_operation(OpCode::ConstantI32(4), 0);
         vm.add_operation(OpCode::AddI32, 0);
         vm.add_operation(OpCode::ConstantI32(3), 0);
         vm.add_operation(OpCode::DivideI32, 0);
         vm.exec();
         assert_eq!(vm.stack(), &vec![Value::I32(2)]);
     }
-
 }
