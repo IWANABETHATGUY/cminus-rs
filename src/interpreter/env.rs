@@ -1,6 +1,6 @@
 use crate::parser::ast::FunctionDeclaration;
 use enum_as_inner::EnumAsInner;
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use std::{cell::RefCell, rc::Rc};
 #[derive(Debug, Clone)]
 pub enum LiteralType {

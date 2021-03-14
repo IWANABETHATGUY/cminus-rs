@@ -6,11 +6,11 @@ mod lexer;
 mod parser;
 use lexer::lex::Lexer;
 use parser::{parse::Parser, Walk};
-use std::{fs::read_to_string};
+use std::{fs::read_to_string, time::Instant};
 
 use std::path;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/interpreter/bubble_sort.txt");
+    let path = path::Path::new("tests/fixtures/interpreter/test.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
@@ -23,7 +23,7 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
-    // let start = Instant::now();
+    let start = Instant::now();
     match interpreter::interpret(&mut res, false) {
         Ok(env) => {
             println!("{}", env.get_std_simulator_string());
@@ -32,8 +32,7 @@ fn main() -> Result<(), std::io::Error> {
             println!("interpreter error",);
         }
     };
-    // println!("total: {:?}", start.elapsed());
-    // parser.error_reporter.emit_std()?;
+    println!("total: {:?}", start.elapsed());
     // println!("{}", res.walk(0));
     // println!("{}", serde_json::to_string(&res).unwrap());
     Ok(())

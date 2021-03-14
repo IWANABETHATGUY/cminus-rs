@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
 use crate::parser::ast::*;
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
@@ -327,7 +327,7 @@ impl Evaluate for Expression {
 
 impl Evaluate for AssignmentExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
-        if let Some(box ref expr) = self.lhs.expression {
+        if let Some(ref expr) = self.lhs.expression {
             let index_eval = expr.evaluate(env)?;
             let rhs_eval = self.rhs.evaluate(env)?;
             if let Binding::NumberLiteral(index) = index_eval {
@@ -375,10 +375,19 @@ impl Evaluate for AssignmentExpression {
                     self.lhs.id.value
                 );
             })?;
-            *lhs_binding = rhs_eval;
+            if variant_eq(lhs_binding, &rhs_eval) {
+                *lhs_binding = rhs_eval;
+            } else {
+                println!("{}", format!("left is {:?} right is {:?}", lhs_binding, rhs_eval));
+                return Err(());
+            }
             Ok(lhs_binding.clone())
         }
     }
+}
+
+fn variant_eq(a: &Binding, b: &Binding) -> bool {
+    std::mem::discriminant(a) == std::mem::discriminant(b)
 }
 
 impl Evaluate for BinaryExpression {
@@ -424,24 +433,24 @@ fn evaluate_binary_expression_literal(
 ) -> Result<Binding, ()> {
     match (m, n) {
         (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => match op {
-            Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
-            Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
-            Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
-            Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
-            Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
-            Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
-            Operation::PLUS => Ok(Binding::NumberLiteral(a + b)),
-            Operation::MINUS => Ok(Binding::NumberLiteral(a - b)),
-            Operation::MULTIPLY => Ok(Binding::NumberLiteral(a * b)),
-            Operation::DIVIDE => Ok(Binding::NumberLiteral(a / b)),
+            Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
+            Operation::LT(_, _) => Ok(Binding::BooleanLiteral(a < b)),
+            Operation::GE(_, _) => Ok(Binding::BooleanLiteral(a >= b)),
+            Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
+            Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
+            Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
+            Operation::PLUS(_, _) => Ok(Binding::NumberLiteral(a + b)),
+            Operation::MINUS(_, _) => Ok(Binding::NumberLiteral(a - b)),
+            Operation::MULTIPLY(_, _) => Ok(Binding::NumberLiteral(a * b)),
+            Operation::DIVIDE(_, _) => Ok(Binding::NumberLiteral(a / b)),
         },
         (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
-            Operation::GT => Ok(Binding::BooleanLiteral(a > b)),
-            Operation::LT => Ok(Binding::BooleanLiteral(a < b)),
-            Operation::GE => Ok(Binding::BooleanLiteral(a >= b)),
-            Operation::LE => Ok(Binding::BooleanLiteral(a <= b)),
-            Operation::EQ => Ok(Binding::BooleanLiteral(a == b)),
-            Operation::NE => Ok(Binding::BooleanLiteral(a != b)),
+            Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
+            Operation::LT(_, _) => Ok(Binding::BooleanLiteral(a < b)),
+            Operation::GE(_, _) => Ok(Binding::BooleanLiteral(a >= b)),
+            Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
+            Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
+            Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
             _ => Err(()),
         },
         _ => Err(()),
@@ -459,7 +468,7 @@ impl Evaluate for Factor {
             Factor::Var(var) => {
                 // let index_eval = expr.evaluate(env)?;
                 match var.expression {
-                    Some(box ref expr) => {
+                    Some(ref expr) => {
                         let index_eval = expr.evaluate(env)?;
                         if let Binding::NumberLiteral(index) = index_eval {
                             match env.get_mut(&var.id.value).ok_or_else(|| {
