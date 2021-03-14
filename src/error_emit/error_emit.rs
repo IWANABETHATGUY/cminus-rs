@@ -7,7 +7,7 @@ use codespan_reporting::{
         termcolor::{Buffer, StandardStream},
     },
 };
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 use std::ops::Range;
 pub struct ErrorReporter<'a> {
