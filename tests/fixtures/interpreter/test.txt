@@ -7,5 +7,4 @@ int fibonacci(int a) {
 
 void main() {
   int a = 2;
-  a = false;
 }

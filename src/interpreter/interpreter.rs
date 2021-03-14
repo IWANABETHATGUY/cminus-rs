@@ -1,9 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
-use crate::parser::ast::*;
+use crate::{parser::ast::*, util::variant_eq};
 use rustc_hash::FxHashMap;
-
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -378,16 +377,15 @@ impl Evaluate for AssignmentExpression {
             if variant_eq(lhs_binding, &rhs_eval) {
                 *lhs_binding = rhs_eval;
             } else {
-                println!("{}", format!("left is {:?} right is {:?}", lhs_binding, rhs_eval));
+                println!(
+                    "{}",
+                    format!("left is {:?} right is {:?}", lhs_binding, rhs_eval)
+                );
                 return Err(());
             }
             Ok(lhs_binding.clone())
         }
     }
-}
-
-fn variant_eq(a: &Binding, b: &Binding) -> bool {
-    std::mem::discriminant(a) == std::mem::discriminant(b)
 }
 
 impl Evaluate for BinaryExpression {
