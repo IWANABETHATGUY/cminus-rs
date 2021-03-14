@@ -327,7 +327,7 @@ impl Evaluate for Expression {
 
 impl Evaluate for AssignmentExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
-        if let Some(box ref expr) = self.lhs.expression {
+        if let Some(ref expr) = self.lhs.expression {
             let index_eval = expr.evaluate(env)?;
             let rhs_eval = self.rhs.evaluate(env)?;
             if let Binding::NumberLiteral(index) = index_eval {
@@ -468,7 +468,7 @@ impl Evaluate for Factor {
             Factor::Var(var) => {
                 // let index_eval = expr.evaluate(env)?;
                 match var.expression {
-                    Some(box ref expr) => {
+                    Some(ref expr) => {
                         let index_eval = expr.evaluate(env)?;
                         if let Binding::NumberLiteral(index) = index_eval {
                             match env.get_mut(&var.id.value).ok_or_else(|| {

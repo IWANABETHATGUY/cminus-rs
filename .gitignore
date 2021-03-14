@@ -6,3 +6,5 @@ test.c
 # perf
 perf.data*
 flamegraph.svg
+
+.idea
