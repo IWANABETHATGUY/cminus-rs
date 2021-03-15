@@ -685,12 +685,19 @@ impl Walk for CallExpression {
             " ".repeat(level * 2),
             generate_codespan_postfix(self)
         );
+        let arguments_codespan = if self.arguments.len() > 0 { 
+            let start = self.arguments[0].start();
+            let end = self.arguments[self.arguments.len() - 1].end();
+            format!("@{}..{}", start, end)
+        } else {
+            "".to_string()
+        };
         let children = vec![
             self.id.walk(level + 1),
             format!(
                 "{}Arguments {}",
                 " ".repeat((level + 1) * 2),
-                generate_codespan_postfix(self)
+                arguments_codespan
             ),
             self.arguments
                 .iter()
