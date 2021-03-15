@@ -1,11 +1,14 @@
+use std::rc::Rc;
+
 use super::op_code::disassemble_instruction;
 use super::{op_code::OpCode, value::Value};
 use crate::util::variant_eq;
-
+use rustc_hash::FxHashMap;
 pub struct Vm {
     operations: Vec<OpCode>,
     line_number: Vec<usize>,
     stack: Vec<Value>,
+    globals: FxHashMap<String, Rc<Value>>,
 }
 
 impl Vm {
@@ -14,6 +17,7 @@ impl Vm {
             operations: vec![],
             line_number: vec![],
             stack: vec![],
+            globals: FxHashMap::default()
         }
     }
 

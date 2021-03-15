@@ -431,16 +431,16 @@ fn evaluate_binary_expression_literal(
 ) -> Result<Binding, ()> {
     match (m, n) {
         (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => match op {
+            Operation::PLUS(_, _) => Ok(Binding::NumberLiteral(a + b)),
+            Operation::MINUS(_, _) => Ok(Binding::NumberLiteral(a - b)),
+            Operation::MULTIPLY(_, _) => Ok(Binding::NumberLiteral(a * b)),
+            Operation::DIVIDE(_, _) => Ok(Binding::NumberLiteral(a / b)),
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
             Operation::LT(_, _) => Ok(Binding::BooleanLiteral(a < b)),
             Operation::GE(_, _) => Ok(Binding::BooleanLiteral(a >= b)),
             Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
             Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
             Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
-            Operation::PLUS(_, _) => Ok(Binding::NumberLiteral(a + b)),
-            Operation::MINUS(_, _) => Ok(Binding::NumberLiteral(a - b)),
-            Operation::MULTIPLY(_, _) => Ok(Binding::NumberLiteral(a * b)),
-            Operation::DIVIDE(_, _) => Ok(Binding::NumberLiteral(a / b)),
         },
         (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
