@@ -1,4 +1,4 @@
-use std::fmt::{format, Display};
+use std::fmt::Display;
 
 use codespan_drive::CodeSpan;
 use serde::Serialize;
@@ -97,6 +97,16 @@ impl Walk for VarDeclaration {
 pub enum Declaration {
     FunctionDeclaration(FunctionDeclaration),
     VarDeclaration(VarDeclaration),
+}
+
+impl Declaration {
+    pub fn try_into_function_declaration(self) -> Result<FunctionDeclaration, Self> {
+        if let Self::FunctionDeclaration(v) = self {
+            Ok(v)
+        } else {
+            Err(self)
+        }
+    }
 }
 impl Walk for Declaration {
     fn walk(&self, level: usize) -> String {
@@ -203,7 +213,7 @@ impl Codespan for Params {
     fn start(&self) -> usize {
         match self {
             Params::Void => self.start(),
-            Params::ParamsList { params } => {
+            Params::ParamsList { .. } => {
                 unreachable!()
             }
         }
@@ -212,7 +222,7 @@ impl Codespan for Params {
     fn end(&self) -> usize {
         match self {
             Params::Void => self.end(),
-            Params::ParamsList { params } => {
+            Params::ParamsList { .. } => {
                 unreachable!()
             }
         }
@@ -511,7 +521,12 @@ pub struct Var {
 
 impl Walk for Var {
     fn walk(&self, level: usize) -> String {
-        self.id.walk(level)
+        let id = self.id.walk(level + 1);
+        let mut result = vec![format!("{}Var {}", " ".repeat(2 * level), generate_codespan_postfix(self)), id];
+        if let Some(ref expr) = self.expression {
+            result.push(expr.walk(level + 1));
+        }
+        result.join("\n")
     }
 }
 

@@ -1,9 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
-use crate::parser::ast::*;
+use crate::{parser::ast::*, util::variant_eq};
 use rustc_hash::FxHashMap;
-
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -36,7 +35,7 @@ impl Evaluate for Declaration {
                 env.define(
                     func.id.value.clone(),
                     Binding::FunctionDeclaration(std::rc::Rc::new(func.clone())),
-                );
+                )?;
             }
             Declaration::VarDeclaration(var) => {
                 var.evaluate(env)?;
@@ -105,7 +104,7 @@ impl VarDeclaration {
                                 .get_initialized_array(env, &self.type_specifier.kind, length)?
                                 .into_iter()
                                 .map(|item| match item {
-                                    LiteralType::Boolean(n) => {
+                                    LiteralType::Boolean(_) => {
                                         unreachable!();
                                     }
                                     LiteralType::Number(n) => n,
@@ -125,7 +124,7 @@ impl VarDeclaration {
                                 .into_iter()
                                 .map(|item| match item {
                                     LiteralType::Boolean(n) => n,
-                                    LiteralType::Number(n) => {
+                                    LiteralType::Number(_) => {
                                         unreachable!();
                                     }
                                 })
@@ -282,7 +281,7 @@ impl CompoundStatement {
     pub fn evaluate(&self, env: &mut Environment) -> Result<Option<Binding>, ()> {
         // before every callExpression we add the binding to env.call_expression_binging, after every compoundStatement we
         // extend the params binding and clear the env.call_expression binding
-        let mut scope = {
+        let scope = {
             let mut map = FxHashMap::default();
             while let Some((string, binding)) = env.call_expression_binding.pop() {
                 map.insert(string, binding);
@@ -378,16 +377,15 @@ impl Evaluate for AssignmentExpression {
             if variant_eq(lhs_binding, &rhs_eval) {
                 *lhs_binding = rhs_eval;
             } else {
-                println!("{}", format!("left is {:?} right is {:?}", lhs_binding, rhs_eval));
+                println!(
+                    "{}",
+                    format!("left is {:?} right is {:?}", lhs_binding, rhs_eval)
+                );
                 return Err(());
             }
             Ok(lhs_binding.clone())
         }
     }
-}
-
-fn variant_eq(a: &Binding, b: &Binding) -> bool {
-    std::mem::discriminant(a) == std::mem::discriminant(b)
 }
 
 impl Evaluate for BinaryExpression {
@@ -433,16 +431,16 @@ fn evaluate_binary_expression_literal(
 ) -> Result<Binding, ()> {
     match (m, n) {
         (Binding::NumberLiteral(a), Binding::NumberLiteral(b)) => match op {
+            Operation::PLUS(_, _) => Ok(Binding::NumberLiteral(a + b)),
+            Operation::MINUS(_, _) => Ok(Binding::NumberLiteral(a - b)),
+            Operation::MULTIPLY(_, _) => Ok(Binding::NumberLiteral(a * b)),
+            Operation::DIVIDE(_, _) => Ok(Binding::NumberLiteral(a / b)),
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
             Operation::LT(_, _) => Ok(Binding::BooleanLiteral(a < b)),
             Operation::GE(_, _) => Ok(Binding::BooleanLiteral(a >= b)),
             Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
             Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
             Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
-            Operation::PLUS(_, _) => Ok(Binding::NumberLiteral(a + b)),
-            Operation::MINUS(_, _) => Ok(Binding::NumberLiteral(a - b)),
-            Operation::MULTIPLY(_, _) => Ok(Binding::NumberLiteral(a * b)),
-            Operation::DIVIDE(_, _) => Ok(Binding::NumberLiteral(a / b)),
         },
         (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
@@ -484,7 +482,6 @@ impl Evaluate for Factor {
                                     ArrayType::Number { array, .. } => {
                                         Ok(Binding::NumberLiteral(array.borrow()[index as usize]))
                                     }
-                                    _ => Err(()),
                                 },
                                 _ => {
                                     panic!("only array type can be indexed");

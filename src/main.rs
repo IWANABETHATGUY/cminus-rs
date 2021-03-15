@@ -5,7 +5,8 @@ mod interpreter;
 mod lexer;
 mod parser;
 use lexer::lex::Lexer;
-use parser::{parse::Parser, Walk};
+mod util;
+use parser::{Walk, parse::Parser};
 use std::{fs::read_to_string, time::Instant};
 
 use std::path;
@@ -33,7 +34,6 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     println!("total: {:?}", start.elapsed());
-    // println!("{}", res.walk(0));
-    // println!("{}", serde_json::to_string(&res).unwrap());
+    println!("{}", res.walk(0));
     Ok(())
 }
