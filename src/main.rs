@@ -8,7 +8,8 @@ use lexer::lex::Lexer;
 mod util;
 use parser::{Walk, parse::Parser};
 use std::{fs::read_to_string, time::Instant};
-
+#[global_allocator]
+static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/interpreter/test.txt");
@@ -34,6 +35,6 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     println!("total: {:?}", start.elapsed());
-    println!("{}", res.walk(0));
+    // println!("{}", res.walk(0));
     Ok(())
 }
