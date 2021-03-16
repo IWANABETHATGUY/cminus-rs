@@ -237,7 +237,14 @@ impl Walk for Params {
                 generate_codespan_postfix(self)
             ),
             Params::ParamsList { params } => {
-                let ast = format!("{}ParameterList", " ".repeat(2 * level),);
+                let params_codespan = if params.len() > 0 {
+                    let start = params[0].start;
+                    let end = params[params.len() - 1].end;
+                    format!("@{}..{}", start, end)
+                } else {
+                    "".to_string()
+                };
+                let ast = format!("{}ParameterList {}", " ".repeat(2 * level), params_codespan);
                 if !params.is_empty() {
                     ast + "\n"
                         + &params
@@ -522,7 +529,14 @@ pub struct Var {
 impl Walk for Var {
     fn walk(&self, level: usize) -> String {
         let id = self.id.walk(level + 1);
-        let mut result = vec![format!("{}Var {}", " ".repeat(2 * level), generate_codespan_postfix(self)), id];
+        let mut result = vec![
+            format!(
+                "{}Var {}",
+                " ".repeat(2 * level),
+                generate_codespan_postfix(self)
+            ),
+            id,
+        ];
         if let Some(ref expr) = self.expression {
             result.push(expr.walk(level + 1));
         }
@@ -685,7 +699,7 @@ impl Walk for CallExpression {
             " ".repeat(level * 2),
             generate_codespan_postfix(self)
         );
-        let arguments_codespan = if self.arguments.len() > 0 { 
+        let arguments_codespan = if self.arguments.len() > 0 {
             let start = self.arguments[0].start();
             let end = self.arguments[self.arguments.len() - 1].end();
             format!("@{}..{}", start, end)

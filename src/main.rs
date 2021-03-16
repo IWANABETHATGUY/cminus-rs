@@ -35,6 +35,6 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     println!("total: {:?}", start.elapsed());
-    // println!("{}", res.walk(0));
+    println!("{}", res.walk(0));
     Ok(())
 }
