@@ -4,11 +4,11 @@ use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
 use crate::{parser::ast::*, util::variant_eq};
 use fxhash::FxHashMap;
 pub trait Evaluate {
-    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
+    fn evaluate<'a>(&self, env: &'a mut Environment<'a>) -> Result<Binding<'a>, ()>;
 }
 
 impl Evaluate for Program {
-    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+    fn evaluate<'a>(&self, env: &'a mut Environment<'a>) -> Result<Binding<'a>, ()> {
         for decl in self.declarations.iter() {
             match decl.evaluate(env) {
                 Ok(_) => {}
@@ -22,7 +22,7 @@ impl Evaluate for Program {
 }
 
 impl Evaluate for Declaration {
-    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+    fn evaluate<'a>(&self, env: &'a mut Environment<'a>) -> Result<Binding<'a>, ()> {
         match self {
             Declaration::FunctionDeclaration(func) => {
                 // match func.id.value.as_ref() {
@@ -32,10 +32,7 @@ impl Evaluate for Declaration {
                 //     }
                 //     _ => {}
                 // }
-                env.define(
-                    func.id.value.clone(),
-                    Binding::FunctionDeclaration(std::rc::Rc::new(func.clone())),
-                )?;
+                env.define(func.id.value.clone(), Binding::FunctionDeclaration(&func))?;
             }
             Declaration::VarDeclaration(var) => {
                 var.evaluate(env)?;
@@ -505,7 +502,7 @@ impl Evaluate for Factor {
     }
 }
 impl Evaluate for CallExpression {
-    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+    fn evaluate<'a>(&self, env: &'a mut Environment<'a>) -> Result<Binding<'a>, ()> {
         let func_name = &self.id.value;
         if func_name == "print" || func_name == "println" {
             let binding_list = {
@@ -550,11 +547,11 @@ impl Evaluate for CallExpression {
     }
 }
 
-fn prepare_call_expression_binding(
-    env: &mut Environment,
+fn prepare_call_expression_binding<'b, 'a: 'b>(
+    env: &'b mut Environment<'a>,
     params: &Params,
-    arguments: &Vec<Expression>,
-) -> Result<Vec<(String, Binding)>, ()> {
+    arguments: &'b Vec<Expression>,
+) -> Result<Vec<(String, Binding<'a>)>, ()> {
     match params {
         Params::ParamsList { params } => {
             if params.len() != arguments.len() {
@@ -578,13 +575,13 @@ fn prepare_call_expression_binding(
     }
 }
 
-fn generate_assignable_binding(
-    env: &mut Environment,
+fn generate_assignable_binding<'a>(
+    env: &'a mut Environment<'a>,
     param: &Parameter,
-    arg: &Expression,
-) -> Result<Binding, ()> {
+    arg: &'a Expression,
+) -> Result<Binding<'a>, ()> {
     if !param.is_array {
-        let arg_binding = arg.evaluate(env)?;
+        let arg_binding: Binding<'a> = arg.evaluate(env)?;
         match (&param.type_specifier.kind, &arg_binding) {
             (TypeSpecifierKind::Int, Binding::NumberLiteral(_)) => Ok(arg_binding),
             (TypeSpecifierKind::Boolean, Binding::BooleanLiteral(_)) => Ok(arg_binding),

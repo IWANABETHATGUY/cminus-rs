@@ -23,7 +23,7 @@ impl IntoLiteral for bool {
         LiteralType::Boolean(*self)
     }
 }
-impl IntoLiteral for Binding {
+impl<'a> IntoLiteral for Binding<'a> {
     fn get_literal(&self) -> LiteralType {
         match self {
             Binding::NumberLiteral(n) => LiteralType::Number(*n),
@@ -99,24 +99,24 @@ impl ArrayType {
     }
 }
 #[derive(Debug, Clone, EnumAsInner)]
-pub enum Binding {
+pub enum Binding<'a> {
     NumberLiteral(i32),
     BooleanLiteral(bool),
     Array(ArrayType),
-    FunctionDeclaration(Rc<FunctionDeclaration>),
+    FunctionDeclaration(&'a FunctionDeclaration),
     Variable(String),
     Void,
 }
-pub type Scope = FxHashMap<String, Binding>;
+pub type Scope<'a> = FxHashMap<String, Binding<'a>>;
 #[derive(Debug)]
-pub struct Environment {
-    pub(crate) scope_stack: Vec<Scope>,
-    pub(crate) call_expression_binding: Vec<(String, Binding)>,
+pub struct Environment<'a> {
+    pub(crate) scope_stack: Vec<Scope<'a>>,
+    pub(crate) call_expression_binding: Vec<(String, Binding<'a>)>,
     pub(crate) std_io: bool,
     pub(crate) std_simulator: Vec<String>,
 }
 
-impl Environment {
+impl<'a> Environment<'a> {
     pub fn get(&self, name: &String) -> Option<&Binding> {
         for scope in self.scope_stack.iter().rev() {
             if let Some(binding) = scope.get(name) {
@@ -132,7 +132,7 @@ impl Environment {
         }
         None
     }
-    pub fn get_mut(&mut self, name: &String) -> Option<&mut Binding> {
+    pub fn get_mut(&mut self, name: &String) -> Option<&'a mut Binding> {
         for scope in self.scope_stack.iter_mut().rev() {
             if let Some(binding) = scope.get_mut(name) {
                 return Some(binding);
@@ -140,7 +140,7 @@ impl Environment {
         }
         None
     }
-    pub fn define(&mut self, name: String, binding: Binding) -> Result<(), ()> {
+    pub fn define(&mut self, name: String, binding: Binding<'a>) -> Result<(), ()> {
         if let Some(scope) = self.scope_stack.last_mut() {
             if scope.contains_key(&name) {
                 return Err(());
