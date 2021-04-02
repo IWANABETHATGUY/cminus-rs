@@ -1,6 +1,7 @@
 use crate::parser::ast::FunctionDeclaration;
 use enum_as_inner::EnumAsInner;
 use fxhash::FxHashMap;
+use smol_str::SmolStr;
 
 use std::{cell::RefCell, rc::Rc};
 #[derive(Debug, Clone)]
@@ -107,17 +108,17 @@ pub enum Binding {
     Variable(String),
     Void,
 }
-pub type Scope = FxHashMap<String, Binding>;
+pub type Scope = FxHashMap<SmolStr, Binding>;
 #[derive(Debug)]
 pub struct Environment {
     pub(crate) scope_stack: Vec<Scope>,
-    pub(crate) call_expression_binding: Vec<(String, Binding)>,
+    pub(crate) call_expression_binding: Vec<(SmolStr, Binding)>,
     pub(crate) std_io: bool,
     pub(crate) std_simulator: Vec<String>,
 }
 
 impl Environment {
-    pub fn get(&self, name: &String) -> Option<&Binding> {
+    pub fn get(&self, name: &SmolStr) -> Option<&Binding> {
         for scope in self.scope_stack.iter().rev() {
             if let Some(binding) = scope.get(name) {
                 return Some(binding);
@@ -126,13 +127,13 @@ impl Environment {
         None
     }
 
-    pub fn get_func(&self, name: &String) -> Option<&Binding> {
+    pub fn get_func(&self, name: &SmolStr) -> Option<&Binding> {
         if let Some(binding) = self.scope_stack.first().unwrap().get(name) {
             return Some(binding);
         }
         None
     }
-    pub fn get_mut(&mut self, name: &String) -> Option<&mut Binding> {
+    pub fn get_mut(&mut self, name: &SmolStr) -> Option<&mut Binding> {
         for scope in self.scope_stack.iter_mut().rev() {
             if let Some(binding) = scope.get_mut(name) {
                 return Some(binding);
@@ -140,7 +141,7 @@ impl Environment {
         }
         None
     }
-    pub fn define(&mut self, name: String, binding: Binding) -> Result<(), ()> {
+    pub fn define(&mut self, name: SmolStr, binding: Binding) -> Result<(), ()> {
         if let Some(scope) = self.scope_stack.last_mut() {
             if scope.contains_key(&name) {
                 return Err(());

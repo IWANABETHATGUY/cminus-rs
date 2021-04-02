@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use super::env::{ArrayType, Binding, Environment, IntoLiteral, LiteralType};
 use crate::{parser::ast::*, util::variant_eq};
 use fxhash::FxHashMap;
+use smol_str::SmolStr;
 pub trait Evaluate {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()>;
 }
@@ -283,8 +284,8 @@ impl CompoundStatement {
         // extend the params binding and clear the env.call_expression binding
         let scope = {
             let mut map = FxHashMap::default();
-            while let Some((string, binding)) = env.call_expression_binding.pop() {
-                map.insert(string, binding);
+            while let Some((key, binding)) = env.call_expression_binding.pop() {
+                map.insert(SmolStr::from(key), binding);
             }
             map
         };
@@ -403,7 +404,7 @@ impl Evaluate for BinaryExpression {
                 left_eval @ Binding::NumberLiteral(_) | left_eval @ Binding::BooleanLiteral(_),
                 Binding::Variable(var),
             ) => {
-                if let Some(right_var) = env.get(var) {
+                if let Some(right_var) = env.get(&SmolStr::from(var)) {
                     evaluate_binary_expression_literal(left_eval, right_var, &self.operation)
                 } else {
                     Err(())
@@ -413,7 +414,7 @@ impl Evaluate for BinaryExpression {
                 Binding::Variable(var),
                 right_eval @ Binding::NumberLiteral(_) | right_eval @ Binding::BooleanLiteral(_),
             ) => {
-                if let Some(left_var) = env.get(var) {
+                if let Some(left_var) = env.get(&SmolStr::from(var)) {
                     evaluate_binary_expression_literal(left_var, right_eval, &self.operation)
                 } else {
                     Err(())
@@ -554,7 +555,7 @@ fn prepare_call_expression_binding(
     env: &mut Environment,
     params: &Params,
     arguments: &Vec<Expression>,
-) -> Result<Vec<(String, Binding)>, ()> {
+) -> Result<Vec<(SmolStr, Binding)>, ()> {
     match params {
         Params::ParamsList { params } => {
             if params.len() != arguments.len() {

@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use codespan_drive::CodeSpan;
 use serde::Serialize;
+use smol_str::SmolStr;
 pub trait Walk {
     fn walk(&self, level: usize) -> String;
 }
@@ -133,7 +134,7 @@ impl Codespan for Declaration {
 }
 #[derive(Debug, Clone, Serialize, CodeSpan)]
 pub struct Identifier {
-    pub(crate) value: String,
+    pub(crate) value: SmolStr,
     pub start: usize,
     pub end: usize,
 }
