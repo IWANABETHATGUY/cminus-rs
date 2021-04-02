@@ -6,11 +6,12 @@ mod lexer;
 mod parser;
 use lexer::lex::Lexer;
 mod util;
-use parser::{Walk, parse::Parser};
+use parser::{parse::Parser, Walk};
+use std::path;
 use std::{fs::read_to_string, time::Instant};
+#[cfg(target_arch = "x86_64")]
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
-use std::path;
 fn main() -> Result<(), std::io::Error> {
     let path = path::Path::new("tests/fixtures/interpreter/test.txt");
     let source_code = read_to_string(path)?;
