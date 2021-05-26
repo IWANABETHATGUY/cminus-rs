@@ -63,7 +63,7 @@ impl Lexer {
         }
         let mut result = "".to_string();
         let mut save;
-       
+
         let mut token: Option<Token> = None;
         let mut state = State::START;
         let mut cur_token_type = TokenType::Error;
@@ -71,7 +71,7 @@ impl Lexer {
         let mut cur_column = 0;
         let mut flag = false;
         let mut start_index = self.cursor;
-        while state != State::DONE && self.cursor < self.length {
+        while state != State::Done && self.cursor < self.length {
             let cur_char = self.file_vec[self.cursor];
             self.next_char();
             save = true;
@@ -79,51 +79,65 @@ impl Lexer {
             match state {
                 State::START => match cur_char {
                     '<' => {
-                        state = State::INLESS;
+                        state = State::InLess;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Lt;
                         }
                     }
                     '/' => {
-                        state = State::INDIVIDE;
+                        state = State::InDivide;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Times;
                         }
                     }
                     '>' => {
-                        state = State::INGREAT;
+                        state = State::InGreat;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Gt;
                         }
                     }
                     '!' => {
-                        state = State::INNOTEQUAL;
+                        state = State::InNotEqual;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Error;
                         }
                     }
                     '=' => {
-                        state = State::INASSIGN;
+                        state = State::InAssign;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Assign;
                         }
                     }
-                    _ if util::is_digit(cur_char) => {
-                        state = State::INNUM;
+                    '&' => {
+                        state = State::InAnd;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
+                            cur_token_type = TokenType::Error;
+                        }
+                    }
+                    '|' => {
+                        state = State::InOr;
+                        if self.cursor == self.length {
+                            state = State::Done;
+                            cur_token_type = TokenType::Error;
+                        }
+                    }
+                    _ if util::is_digit(cur_char) => {
+                        state = State::InNum;
+                        if self.cursor == self.length {
+                            state = State::Done;
                             cur_token_type = TokenType::NumberLiteral;
                         }
                     }
                     _ if util::is_letter(cur_char) => {
-                        state = State::INID;
+                        state = State::InId;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Id;
                         }
                     }
@@ -133,17 +147,17 @@ impl Lexer {
                         self.column = 0;
                         save = false;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                         }
                     }
                     _ if cur_char.is_whitespace() => {
                         save = false;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                         }
                     }
                     _ => {
-                        state = State::DONE;
+                        state = State::Done;
                         match cur_char {
                             '+' => cur_token_type = TokenType::Plus,
                             '*' => cur_token_type = TokenType::Multiply,
@@ -160,47 +174,71 @@ impl Lexer {
                         }
                     }
                 },
-                State::INDIVIDE => match cur_char {
+                State::InAnd => match cur_char {
+                    '&' => {
+                        state = State::Done;
+                        cur_token_type = TokenType::And;
+                    }
+                    _ => {
+                        state = State::Done;
+                        self.unget_next_char();
+                        save = false;
+                        cur_token_type = TokenType::Error;
+                    }
+                },
+                State::InOr => match cur_char {
+                    '|' => {
+                        state = State::Done;
+                        cur_token_type = TokenType::Or;
+                    }
+                    _ => {
+                        state = State::Done;
+                        self.unget_next_char();
+                        save = false;
+                        cur_token_type = TokenType::Error;
+                    }
+                },
+                State::InDivide => match cur_char {
                     '*' => {
-                        state = State::INCOMMENT;
+                        state = State::InComment;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Error;
                         }
                     }
                     _ => {
-                        state = State::DONE;
+                        state = State::Done;
                         self.unget_next_char();
                         save = false;
                         cur_token_type = TokenType::Times;
                     }
                 },
                 // State::INMULTPLY => {} // do nothing
-                State::INNUM => {
+                State::InNum => {
                     if !util::is_digit(cur_char) {
                         self.unget_next_char();
                         save = false;
-                        state = State::DONE;
+                        state = State::Done;
                         cur_token_type = TokenType::NumberLiteral;
                     } else if self.cursor == self.length {
-                        state = State::DONE;
+                        state = State::Done;
                         cur_token_type = TokenType::NumberLiteral;
                     }
                 }
-                State::INID => {
+                State::InId => {
                     if !util::is_letter(cur_char) {
                         self.unget_next_char();
                         save = false;
-                        state = State::DONE;
+                        state = State::Done;
                         cur_token_type = TokenType::Id;
                     } else if self.cursor == self.length {
-                        state = State::DONE;
+                        state = State::Done;
                         cur_token_type = TokenType::Id;
                     }
                 }
-                State::DONE => {} // do nothing
-                State::INLESS => {
-                    state = State::DONE;
+                State::Done => {} // do nothing
+                State::InLess => {
+                    state = State::Done;
                     if cur_char == '=' {
                         cur_token_type = TokenType::Le;
                     } else {
@@ -209,8 +247,8 @@ impl Lexer {
                         cur_token_type = TokenType::Lt;
                     }
                 }
-                State::INGREAT => {
-                    state = State::DONE;
+                State::InGreat => {
+                    state = State::Done;
                     if cur_char == '=' {
                         cur_token_type = TokenType::Ge;
                     } else {
@@ -219,8 +257,8 @@ impl Lexer {
                         cur_token_type = TokenType::Gt;
                     }
                 }
-                State::INASSIGN => {
-                    state = State::DONE;
+                State::InAssign => {
+                    state = State::Done;
                     if cur_char == '=' {
                         cur_token_type = TokenType::Eq;
                     } else {
@@ -229,8 +267,8 @@ impl Lexer {
                         cur_token_type = TokenType::Assign;
                     }
                 }
-                State::INNOTEQUAL => {
-                    state = State::DONE;
+                State::InNotEqual => {
+                    state = State::Done;
                     if cur_char == '=' {
                         cur_token_type = TokenType::Ne;
                     } else {
@@ -239,28 +277,28 @@ impl Lexer {
                         cur_token_type = TokenType::Error;
                     }
                 }
-                State::INCOMMENT => {
+                State::InComment => {
                     if cur_char == '\n' {
                         self.last_line = self.line;
                         self.line += 1;
                         self.column = 0;
                         if self.cursor == self.length {
-                            state = State::DONE;
+                            state = State::Done;
                         }
                     }
                     if cur_char == '*' {
-                        state = State::INECOMMENT;
+                        state = State::InEndComment;
                     }
                     if self.cursor == self.length {
-                        state = State::DONE;
+                        state = State::Done;
                         cur_token_type = TokenType::Error;
                     }
                 }
-                State::INECOMMENT => {
+                State::InEndComment => {
                     if cur_char == '/' {
                         state = State::START;
                         if self.display_comment {
-                            state = State::DONE;
+                            state = State::Done;
                             cur_token_type = TokenType::Comment;
                         } else {
                             save = false;
@@ -268,7 +306,7 @@ impl Lexer {
                         }
                     } else if cur_char == '*' {
                     } else {
-                        state = State::INCOMMENT;
+                        state = State::InComment;
                         if cur_char == '\n' {
                             self.last_line = self.line;
                             self.line += 1;
@@ -287,7 +325,7 @@ impl Lexer {
                 start_index = self.cursor - 1;
                 flag = true;
             }
-            if state == State::DONE && !result.is_empty() {
+            if state == State::Done && !result.is_empty() {
                 if cur_token_type == TokenType::Id {
                     cur_token_type = Self::keyword_or_id_token(&result);
                 }
@@ -297,7 +335,7 @@ impl Lexer {
                     Position::new(cur_line, cur_column),
                     Position::new(self.line, self.column),
                     start_index,
-                    self.cursor
+                    self.cursor,
                 ));
                 break;
             }

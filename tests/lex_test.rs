@@ -22,9 +22,7 @@ mod test_lex {
     use std::fs::read_to_string;
     use std::path;
     use tinylang_rs::lexer::token::{Position, TokenType};
-    use tinylang_rs::{
-        lexer::{lex::Lexer, token::KeywordType},
-    };
+    use tinylang_rs::lexer::{lex::Lexer, token::KeywordType};
     #[test]
     fn test_lex_meaningless() -> Result<(), std::io::Error> {
         let path = path::Path::new("tests/fixtures/lexer/test.txt");
@@ -32,7 +30,7 @@ mod test_lex {
         let mut lexer = Lexer::new(&file);
 
         let list = lexer.lex();
-        assert_eq!(list.len(), 37);
+        assert_eq!(list.len(), 43);
 
         let mut iter = list.into_iter();
         lex_test_helper(
@@ -267,9 +265,9 @@ mod test_lex {
             iter.next(),
             TokenType::Semi,
             Position::new(12, 8),
-            Position::new(12,9),
+            Position::new(12, 9),
         );
-         lex_test_helper(
+        lex_test_helper(
             &file,
             iter.next(),
             TokenType::Id,
@@ -295,7 +293,49 @@ mod test_lex {
             iter.next(),
             TokenType::Semi,
             Position::new(13, 9),
-            Position::new(13,10),
+            Position::new(13, 10),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(14, 0),
+            Position::new(14, 1),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::And,
+            Position::new(14, 2),
+            Position::new(14, 4),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(14, 5),
+            Position::new(14, 6),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(15, 0),
+            Position::new(15, 1),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Or,
+            Position::new(15, 2),
+            Position::new(15, 4),
+        );
+        lex_test_helper(
+            &file,
+            iter.next(),
+            TokenType::Id,
+            Position::new(15, 5),
+            Position::new(15, 6),
         );
         Ok(())
     }

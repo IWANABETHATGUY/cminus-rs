@@ -1,15 +1,17 @@
 #[derive(PartialEq)]
 pub enum State {
     START,
-    INDIVIDE,
+    InDivide,
     // INMULTPLY,
-    INNUM,
-    INID,
-    DONE,
-    INLESS,
-    INGREAT,
-    INASSIGN,
-    INNOTEQUAL,
-    INCOMMENT,
-    INECOMMENT,
+    InNum,
+    InId,
+    Done,
+    InLess,
+    InGreat,
+    InAssign,
+    InNotEqual,
+    InComment,
+    InEndComment,
+    InAnd,
+    InOr
 }

@@ -30,6 +30,8 @@ pub enum TokenType {
     Gt,
     Ge,
     Eq,
+    And,
+    Or,
     Ne,
     Semi,
     Comma,
@@ -78,6 +80,8 @@ impl fmt::Display for TokenType {
             TokenType::Rbrace => "`}`",
             TokenType::Comment => "comment",
             TokenType::Assign => "`=`",
+            TokenType::And => "`&&`",
+            TokenType::Or => "`||`"
         };
         f.write_str(string)
     }
