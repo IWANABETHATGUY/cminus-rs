@@ -465,12 +465,12 @@ impl<'a> Parser<'a> {
     fn parse_or_expression(&mut self) -> Result<Expression, ()> {
         let mut left_expr = self.parse_and_expression()?;
         while self.match_token(TokenType::Or) {
-            self.consume(1);
             let Token {
                 start_index,
                 end_index,
                 ..
             } = self.next_token().unwrap().clone();
+            self.consume(1);
             let right_expr = self.parse_and_expression()?;
             left_expr = Expression::LogicExpression(LogicExpression {
                 start: left_expr.start(),
@@ -485,12 +485,12 @@ impl<'a> Parser<'a> {
     fn parse_and_expression(&mut self) -> Result<Expression, ()> {
         let mut left_expr = self.parse_simple_expression()?;
         while self.match_token(TokenType::And) {
-            self.consume(1);
             let Token {
                 start_index,
                 end_index,
                 ..
             } = self.next_token().unwrap().clone();
+            self.consume(1);
             let right_expr = self.parse_simple_expression()?;
             left_expr = Expression::LogicExpression(LogicExpression {
                 start: left_expr.start(),

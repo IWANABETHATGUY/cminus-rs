@@ -100,15 +100,7 @@ pub enum Declaration {
     VarDeclaration(VarDeclaration),
 }
 
-impl Declaration {
-    pub fn try_into_function_declaration(self) -> Result<FunctionDeclaration, Self> {
-        if let Self::FunctionDeclaration(v) = self {
-            Ok(v)
-        } else {
-            Err(self)
-        }
-    }
-}
+
 impl Walk for Declaration {
     fn walk(&self, level: usize) -> String {
         match &self {
