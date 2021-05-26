@@ -12,3 +12,5 @@ a == 3
 bool a;
 a = true;
 a = false;
+a && b
+b || c

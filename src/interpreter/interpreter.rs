@@ -321,6 +321,7 @@ impl Evaluate for Expression {
             Expression::BinaryExpression(binary_expr) => binary_expr.evaluate(env),
             Expression::Factor(factor) => factor.evaluate(env),
             Expression::Assignment(assignment) => assignment.evaluate(env),
+            Expression::LogicExpression(logic_expr) => logic_expr.evaluate(env),
         }
     }
 }
@@ -424,6 +425,49 @@ impl Evaluate for BinaryExpression {
         }
     }
 }
+
+impl Evaluate for LogicExpression {
+    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+        match self.operation {
+            Operation::AND(_, _) => {
+                let left_eval = &self.left.evaluate(env)?;
+                if let Binding::BooleanLiteral(true) = left_eval {
+                    let right_eval = &self.right.evaluate(env)?;
+                    if let Binding::BooleanLiteral(true) = right_eval {
+                        return Ok(Binding::BooleanLiteral(true));
+                    } else if let Binding::BooleanLiteral(false) = right_eval {
+                        return Ok(Binding::BooleanLiteral(false));
+                    } else {
+                        return Err(());
+                    }
+                } else if let Binding::BooleanLiteral(false) = left_eval {
+                    return Ok(Binding::BooleanLiteral(false));
+                } else {
+                    return Err(());
+                }
+            }
+            Operation::OR(_, _) => {
+                let left_eval = &self.left.evaluate(env)?;
+                if let Binding::BooleanLiteral(true) = left_eval {
+                    return Ok(Binding::BooleanLiteral(true));
+                } else if let Binding::BooleanLiteral(false) = left_eval {
+                    let right_eval = &self.right.evaluate(env)?;
+                    if let Binding::BooleanLiteral(true) = right_eval {
+                        return Ok(Binding::BooleanLiteral(true));
+                    } else if let Binding::BooleanLiteral(false) = right_eval {
+                        return Ok(Binding::BooleanLiteral(false));
+                    } else {
+                        return Err(());
+                    }
+                } else {
+                    return Err(());
+                }
+            }
+            _ => unimplemented!(), // TODO
+        }
+    }
+}
+
 #[inline]
 fn evaluate_binary_expression_literal(
     m: &Binding,
@@ -442,6 +486,7 @@ fn evaluate_binary_expression_literal(
             Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
             Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
             Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
+            _ => Err(()),
         },
         (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),
