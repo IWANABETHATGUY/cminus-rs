@@ -32,7 +32,28 @@ void main() {
 
 `;
 
+const insertSort = `void insertSort(int a[], int len) {
+  int i = 1;
+  while (i < len) {
+    int target = a[i];
+    int j = i - 1;
+    while (j >= 0 && a[j] > target) {
+      a[j + 1] = a[j];
+      j = j - 1;
+    }
+   a[j + 1] = target;
+   i = i + 1;
+  }
+}
+void main() {
+  int a[8] = { 4, 10, 1, 7, 2, 8, 9, 2 };
+  insertSort(a, 8);
+  print(a);
+}
+`
+
 export default {
     fibonacci,
-    bubbleSort
+    bubbleSort,
+    insertSort
 }
