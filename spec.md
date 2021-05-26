@@ -20,9 +20,11 @@
 - selection-statement -> **if** (expression) statement | **if** (expression) **else** statement
 - iteration-statement -> **while** (expression) statement
 - return-statement -> **return** ; | **return** expression;
-- expression -> var **=** expression | simple-expression
+- expression -> var **=** expression | or-expression 
 - var -> **ID** | **ID** [expression]
 - simple-expression -> additive-expression relop additive-expression | aditive-expression
+- or-expression -> and-expression | or-expression || and-expression
+- and-expression -> simple-expression | and-expression && simple-expression
 - relop -> **<=** | **<** | **>=** | **>**| **==** | **!=** 
 - additive-expression -> additive-expression addop term | term
 - addop -> **+** | **-**

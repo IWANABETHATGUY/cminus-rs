@@ -439,7 +439,7 @@ impl<'a> Parser<'a> {
         self.error_reporter.pop_diagnostic("main.cm");
         // println!("parse_expression: {}", self.error_reporter.emit_string());
         self.cursor = cursor;
-        if let Ok(expr) = self.parse_simple_expression() {
+        if let Ok(expr) = self.parse_or_expression() {
             Ok(expr)
         } else {
             // println!("parse_expression: {}", self.error_reporter.emit_string());
@@ -462,7 +462,46 @@ impl<'a> Parser<'a> {
             Err(())
         }
     }
-
+    fn parse_or_expression(&mut self) -> Result<Expression, ()> {
+        let mut left_expr = self.parse_and_expression()?;
+        while self.match_token(TokenType::Or) {
+            self.consume(1);
+            let Token {
+                start_index,
+                end_index,
+                ..
+            } = self.next_token().unwrap().clone();
+            let right_expr = self.parse_and_expression()?;
+            left_expr = Expression::LogicExpression(LogicExpression {
+                start: left_expr.start(),
+                end: right_expr.end(),
+                left: Box::new(left_expr),
+                right: Box::new(right_expr),
+                operation: Operation::OR(start_index, end_index),
+            });
+        }
+        Ok(left_expr)
+    }
+    fn parse_and_expression(&mut self) -> Result<Expression, ()> {
+        let mut left_expr = self.parse_simple_expression()?;
+        while self.match_token(TokenType::And) {
+            self.consume(1);
+            let Token {
+                start_index,
+                end_index,
+                ..
+            } = self.next_token().unwrap().clone();
+            let right_expr = self.parse_simple_expression()?;
+            left_expr = Expression::LogicExpression(LogicExpression {
+                start: left_expr.start(),
+                end: right_expr.end(),
+                left: Box::new(left_expr),
+                right: Box::new(right_expr),
+                operation: Operation::AND(start_index, end_index),
+            });
+        }
+        Ok(left_expr)
+    }
     fn parse_simple_expression(&mut self) -> Result<Expression, ()> {
         let left_expr = self.parse_additive_expression()?;
         if let Some(op) = self.match_rel_op() {

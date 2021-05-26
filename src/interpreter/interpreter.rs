@@ -321,6 +321,7 @@ impl Evaluate for Expression {
             Expression::BinaryExpression(binary_expr) => binary_expr.evaluate(env),
             Expression::Factor(factor) => factor.evaluate(env),
             Expression::Assignment(assignment) => assignment.evaluate(env),
+            Expression::LogicExpression(logic_expr) => logic_expr.evaluate(env),
         }
     }
 }
@@ -424,6 +425,21 @@ impl Evaluate for BinaryExpression {
         }
     }
 }
+
+impl Evaluate for LogicExpression {
+    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+        match self.operation {
+            Operation::AND(_, _) => {
+                let left_eval = &self.left.evaluate(env)?;
+            }
+            Operation::OR(_, _) => {}
+            _ => unimplemented!(), // TODO
+        }
+        Ok(Binding::BooleanLiteral(false))
+        // let right_eval = &self.right.evaluate(env)?;
+    }
+}
+
 #[inline]
 fn evaluate_binary_expression_literal(
     m: &Binding,
@@ -442,6 +458,7 @@ fn evaluate_binary_expression_literal(
             Operation::LE(_, _) => Ok(Binding::BooleanLiteral(a <= b)),
             Operation::EQ(_, _) => Ok(Binding::BooleanLiteral(a == b)),
             Operation::NE(_, _) => Ok(Binding::BooleanLiteral(a != b)),
+            _ => Err(()),
         },
         (Binding::BooleanLiteral(a), Binding::BooleanLiteral(b)) => match op {
             Operation::GT(_, _) => Ok(Binding::BooleanLiteral(a > b)),

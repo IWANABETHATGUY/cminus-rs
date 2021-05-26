@@ -7,7 +7,7 @@ fn lex_test_helper(
     start_position: Position,
     end_position: Position,
 ) {
-    assert!(actual_token.is_some(), format!("expected {:?}", token_type));
+    assert!(actual_token.is_some(), "expected {:?}", token_type);
     let actual_token = actual_token.unwrap();
     assert_eq!(actual_token.token_type, token_type);
 

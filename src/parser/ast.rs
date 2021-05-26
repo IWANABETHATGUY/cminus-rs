@@ -456,6 +456,7 @@ impl Walk for ExpressionStatement {
 pub enum Expression {
     Assignment(AssignmentExpression),
     BinaryExpression(BinaryExpression),
+    LogicExpression(LogicExpression),
     Factor(Factor),
 }
 
@@ -484,6 +485,19 @@ impl Walk for Expression {
                 ast + &children.join("\n")
             }
             Expression::Factor(factor) => factor.walk(level),
+            Expression::LogicExpression(logic_expr) => {
+                let ast = format!(
+                    "{}LogicExpression {}\n",
+                    " ".repeat(2 * level),
+                    generate_codespan_postfix(self)
+                );
+                let children = vec![
+                    logic_expr.left.walk(level + 1),
+                    logic_expr.operation.walk(level + 1),
+                    logic_expr.right.walk(level + 1),
+                ];
+                ast + &children.join("\n")
+            }
         }
     }
 }
@@ -494,6 +508,7 @@ impl Codespan for Expression {
             Expression::Assignment(expr) => expr.start,
             Expression::BinaryExpression(expr) => expr.start,
             Expression::Factor(expr) => expr.start(),
+            Expression::LogicExpression(expr) => expr.start(),
         }
     }
 
@@ -502,6 +517,7 @@ impl Codespan for Expression {
             Expression::Assignment(expr) => expr.end,
             Expression::BinaryExpression(expr) => expr.end,
             Expression::Factor(expr) => expr.end(),
+            Expression::LogicExpression(expr) => expr.end(),
         }
     }
 }
@@ -546,6 +562,15 @@ impl Walk for Var {
 }
 
 #[derive(Debug, Clone, Serialize, CodeSpan)]
+pub struct LogicExpression {
+    pub(crate) left: Box<Expression>,
+    pub(crate) right: Box<Expression>,
+    pub(crate) operation: Operation,
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Debug, Clone, Serialize, CodeSpan)]
 pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
@@ -565,6 +590,8 @@ pub enum Operation {
     MINUS(usize, usize),
     MULTIPLY(usize, usize),
     DIVIDE(usize, usize),
+    AND(usize, usize),
+    OR(usize, usize),
 }
 impl Display for Operation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -599,6 +626,12 @@ impl Display for Operation {
             Operation::DIVIDE(_, _) => {
                 write!(f, "DIVIDE")
             }
+            Operation::AND(_, _) => {
+                write!(f, "AND")
+            }
+            Operation::OR(_, _) => {
+                write!(f, "OR")
+            }
         }
     }
 }
@@ -615,6 +648,8 @@ impl Codespan for Operation {
             Operation::MINUS(start, _) => *start,
             Operation::MULTIPLY(start, _) => *start,
             Operation::DIVIDE(start, _) => *start,
+            Operation::AND(start, _) => *start,
+            Operation::OR(start, _) => *start,
         }
     }
 
@@ -630,6 +665,8 @@ impl Codespan for Operation {
             Operation::MINUS(_, end) => *end,
             Operation::MULTIPLY(_, end) => *end,
             Operation::DIVIDE(_, end) => *end,
+            Operation::AND(_, end) => *end,
+            Operation::OR(_, end) => *end,
         }
     }
 }
