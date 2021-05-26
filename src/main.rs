@@ -27,15 +27,15 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     // let start = Instant::now();
-    // match interpreter::interpret(&mut res, false) {
-    //     Ok(env) => {
-    //         println!("{}", env.get_std_simulator_string());
-    //     }
-    //     Err(_) => {
-    //         println!("interpreter error",);
-    //     }
-    // };
+    match interpreter::interpret(&mut res, false) {
+        Ok(env) => {
+            println!("{}", env.get_std_simulator_string());
+        }
+        Err(_) => {
+            println!("interpreter error",);
+        }
+    };
     // println!("total: {:?}", start.elapsed());
-    println!("{}", res.walk(0));
+    // println!("{}", res.walk(0));
     Ok(())
 }

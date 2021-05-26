@@ -431,12 +431,40 @@ impl Evaluate for LogicExpression {
         match self.operation {
             Operation::AND(_, _) => {
                 let left_eval = &self.left.evaluate(env)?;
+                if let Binding::BooleanLiteral(true) = left_eval {
+                    let right_eval = &self.right.evaluate(env)?;
+                    if let Binding::BooleanLiteral(true) = right_eval {
+                        return Ok(Binding::BooleanLiteral(true));
+                    } else if let Binding::BooleanLiteral(false) = right_eval {
+                        return Ok(Binding::BooleanLiteral(false));
+                    } else {
+                        return Err(());
+                    }
+                } else if let Binding::BooleanLiteral(false) = left_eval {
+                    return Ok(Binding::BooleanLiteral(false));
+                } else {
+                    return Err(());
+                }
             }
-            Operation::OR(_, _) => {}
+            Operation::OR(_, _) => {
+                let left_eval = &self.left.evaluate(env)?;
+                if let Binding::BooleanLiteral(true) = left_eval {
+                    return Ok(Binding::BooleanLiteral(true));
+                } else if let Binding::BooleanLiteral(false) = left_eval {
+                    let right_eval = &self.right.evaluate(env)?;
+                    if let Binding::BooleanLiteral(true) = right_eval {
+                        return Ok(Binding::BooleanLiteral(true));
+                    } else if let Binding::BooleanLiteral(false) = right_eval {
+                        return Ok(Binding::BooleanLiteral(false));
+                    } else {
+                        return Err(());
+                    }
+                } else {
+                    return Err(());
+                }
+            }
             _ => unimplemented!(), // TODO
         }
-        Ok(Binding::BooleanLiteral(false))
-        // let right_eval = &self.right.evaluate(env)?;
     }
 }
 

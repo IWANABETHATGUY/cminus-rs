@@ -1,3 +1,5 @@
 void main() {
-   bool a = 1 || b && c && 20;
+   bool a = 1 > 20 || false || 100 - 1 > 89;
+   int b = 1 + 2 * 2;
+   print(a, b);
 }
