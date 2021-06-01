@@ -602,8 +602,10 @@ impl<'a> Parser<'a> {
                 }
                 TokenType::Lparen => {
                     self.consume(1);
-                    let expression = self.parse_expression()?;
-                    self.match_and_consume(TokenType::Rparen, true)?;
+                    let mut expression = self.parse_expression()?;
+                    let right_paren_token = self.match_and_consume(TokenType::Rparen, true)?;
+                    expression.set_start(start.min(expression.start()));
+                    expression.set_end(right_paren_token.end_index.max(expression.end()));
                     Expression::Factor(Factor::Expression(Box::new(expression)))
                 }
                 TokenType::Id => {

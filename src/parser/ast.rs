@@ -9,6 +9,8 @@ pub trait Walk {
 pub trait Codespan {
     fn start(&self) -> usize;
     fn end(&self) -> usize;
+    fn set_start(&mut self, start: usize);
+    fn set_end(&mut self, end: usize);
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct Program {
@@ -121,6 +123,20 @@ impl Codespan for Declaration {
             Declaration::VarDeclaration(decl) => decl.end,
         }
     }
+
+    fn set_start(&mut self, start: usize) {
+        match self {
+            Declaration::FunctionDeclaration(decl) => decl.start = start,
+            Declaration::VarDeclaration(decl) => decl.start = start,
+        };
+    }
+
+    fn set_end(&mut self, end: usize) {
+        match self {
+            Declaration::FunctionDeclaration(decl) => decl.end = end,
+            Declaration::VarDeclaration(decl) => decl.end = end,
+        };
+    }
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct Identifier {
@@ -217,6 +233,14 @@ impl Codespan for Params {
                 unreachable!()
             }
         }
+    }
+
+    fn set_start(&mut self, start: usize) {
+        unimplemented!() // TODO
+    }
+
+    fn set_end(&mut self, end: usize) {
+        unimplemented!() // TODO
     }
 }
 impl Walk for Params {
@@ -354,6 +378,10 @@ impl Codespan for Statement {
             Statement::ReturnStatement(stmt) => stmt.end,
         }
     }
+
+    fn set_start(&mut self, start: usize) {}
+
+    fn set_end(&mut self, end: usize) {}
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct SelectionStatement {
@@ -525,6 +553,26 @@ impl Codespan for Expression {
             Expression::UnaryExpression(expr) => expr.end(),
         }
     }
+
+    fn set_start(&mut self, start: usize) {
+        match self {
+            Expression::Assignment(expr) => expr.start = start,
+            Expression::BinaryExpression(expr) => expr.start = start,
+            Expression::Factor(expr) => unimplemented!(),
+            Expression::LogicExpression(expr) => unimplemented!(),
+            Expression::UnaryExpression(expr) => unimplemented!(),
+        };
+    }
+
+    fn set_end(&mut self, end: usize) {
+        match self {
+            Expression::Assignment(expr) => expr.end = end,
+            Expression::BinaryExpression(expr) => expr.end = end,
+            Expression::Factor(expr) => unimplemented!(),
+            Expression::LogicExpression(expr) => unimplemented!(),
+            Expression::UnaryExpression(expr) => unimplemented!(),
+        };
+    }
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct AssignmentExpression {
@@ -649,7 +697,7 @@ impl Display for Operation {
             }
             Operation::NEG(_, _) => {
                 write!(f, "NEG")
-            },
+            }
             Operation::POS(_, _) => write!(f, "POS"),
         }
     }
@@ -691,6 +739,13 @@ impl Codespan for Operation {
             Operation::NEG(_, end) => *end,
             Operation::POS(_, end) => *end,
         }
+    }
+
+    fn set_end(&mut self, end: usize) {
+        unimplemented!() // TODO
+    }
+    fn set_start(&mut self, start: usize) {
+        unimplemented!() // TODO
     }
 }
 impl Walk for Operation {
@@ -743,6 +798,26 @@ impl Codespan for Factor {
             Factor::NumberLiteral(num) => num.end,
             Factor::BooleanLiteral(boolean) => boolean.end,
         }
+    }
+
+    fn set_start(&mut self, start: usize) {
+        match self {
+            Factor::Expression(expr) => unimplemented!(),
+            Factor::Var(var) => var.start = start,
+            Factor::CallExpression(call_expression) => call_expression.start = start,
+            Factor::NumberLiteral(num) => num.start = start,
+            Factor::BooleanLiteral(boolean) => boolean.start = start,
+        };
+    }
+
+    fn set_end(&mut self, end: usize) {
+        match self {
+            Factor::Expression(expr) => unimplemented!(),
+            Factor::Var(var) => var.end = end,
+            Factor::CallExpression(call_expression) => call_expression.end = end,
+            Factor::NumberLiteral(num) => num.end = end,
+            Factor::BooleanLiteral(boolean) => boolean.end = end,
+        };
     }
 }
 #[derive(Debug, Clone, CodeSpan)]

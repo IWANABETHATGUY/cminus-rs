@@ -17,6 +17,14 @@ pub fn code_span(input: TokenStream) -> TokenStream {
             fn end(&self) -> usize {
                 self.end
             }
+
+            fn set_start(&mut self, start: usize) {
+                self.start = start;
+            }
+            
+            fn set_end(&mut self, end: usize) {
+                self.end = end;
+            }
         }
     };
 
