@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use codespan_drive::CodeSpan;
-use serde::Serialize;
 use smol_str::SmolStr;
 pub trait Walk {
     fn walk(&self, level: usize) -> String;
@@ -11,7 +10,7 @@ pub trait Codespan {
     fn start(&self) -> usize;
     fn end(&self) -> usize;
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
     pub start: usize,
@@ -32,7 +31,7 @@ impl Walk for Program {
     }
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct FunctionDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -58,7 +57,7 @@ impl Walk for FunctionDeclaration {
         ast
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct VarDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -94,12 +93,11 @@ impl Walk for VarDeclaration {
         ast + &children.join("\n")
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Declaration {
     FunctionDeclaration(FunctionDeclaration),
     VarDeclaration(VarDeclaration),
 }
-
 
 impl Walk for Declaration {
     fn walk(&self, level: usize) -> String {
@@ -124,7 +122,7 @@ impl Codespan for Declaration {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct Identifier {
     pub(crate) value: SmolStr,
     pub start: usize,
@@ -140,7 +138,7 @@ impl Walk for Identifier {
         )
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct NumberLiteral {
     pub(crate) value: i32,
     pub start: usize,
@@ -156,7 +154,7 @@ impl Walk for NumberLiteral {
         )
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct BooleanLiteral {
     pub(crate) value: bool,
     pub start: usize,
@@ -172,7 +170,7 @@ impl Walk for BooleanLiteral {
         )
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct TypeSpecifier {
     pub(crate) kind: TypeSpecifierKind,
     pub start: usize,
@@ -189,14 +187,14 @@ impl Walk for TypeSpecifier {
         )
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub(crate) enum TypeSpecifierKind {
     Int,
     Void,
     Boolean,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Params {
     Void,
     ParamsList { params: Vec<Parameter> },
@@ -254,7 +252,7 @@ impl Walk for Params {
     }
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct Parameter {
     pub(crate) type_specifier: TypeSpecifier,
     pub(crate) id: Identifier,
@@ -276,7 +274,7 @@ impl Walk for Parameter {
     }
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct CompoundStatement {
     pub(crate) local_declaration: Vec<VarDeclaration>,
     pub(crate) statement_list: Vec<Statement>,
@@ -316,7 +314,7 @@ impl Walk for CompoundStatement {
         ast
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     CompoundStatement(CompoundStatement),
     ExpressionStatement(ExpressionStatement),
@@ -357,7 +355,7 @@ impl Codespan for Statement {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct SelectionStatement {
     pub(crate) test: Expression,
     pub(crate) consequent: Box<Statement>,
@@ -384,7 +382,7 @@ impl Walk for SelectionStatement {
             .join("\n")
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct IterationStatement {
     pub(crate) test: Expression,
     pub(crate) body: Box<Statement>,
@@ -407,7 +405,7 @@ impl Walk for IterationStatement {
         ast + &children.join("\n")
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct ReturnStatement {
     pub(crate) expression: Option<Expression>,
     pub start: usize,
@@ -427,7 +425,7 @@ impl Walk for ReturnStatement {
         ast
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct ExpressionStatement {
     pub(crate) expression: Option<Expression>,
     pub start: usize,
@@ -444,7 +442,7 @@ impl Walk for ExpressionStatement {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Assignment(AssignmentExpression),
     BinaryExpression(BinaryExpression),
@@ -513,7 +511,7 @@ impl Codespan for Expression {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct AssignmentExpression {
     pub(crate) lhs: Var,
     pub(crate) rhs: Box<Expression>,
@@ -527,7 +525,7 @@ impl Walk for AssignmentExpression {
     }
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct Var {
     pub(crate) id: Identifier,
     pub(crate) expression: Option<Box<Expression>>,
@@ -553,7 +551,7 @@ impl Walk for Var {
     }
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct LogicExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
@@ -562,7 +560,7 @@ pub struct LogicExpression {
     pub end: usize,
 }
 
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
@@ -570,7 +568,7 @@ pub struct BinaryExpression {
     pub start: usize,
     pub end: usize,
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Operation {
     GT(usize, usize),
     LT(usize, usize),
@@ -672,7 +670,7 @@ impl Walk for Operation {
         )
     }
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum Factor {
     Expression(Box<Expression>),
     Var(Var),
@@ -714,7 +712,7 @@ impl Codespan for Factor {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, CodeSpan)]
+#[derive(Debug, Clone, CodeSpan)]
 pub struct CallExpression {
     pub(crate) id: Identifier,
     pub(crate) arguments: Vec<Expression>,
