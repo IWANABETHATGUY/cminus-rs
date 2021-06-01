@@ -570,7 +570,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_factor(&mut self) -> Result<Expression, ()> {
-        self.parse_unary_operator();
+        let unary_token = self.parse_unary_operator();
+
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
             let range = token.range();
@@ -661,6 +662,22 @@ impl<'a> Parser<'a> {
                     return Err(());
                 }
             };
+            if let Some(token) = unary_token {
+                let (unary_start, unary_end) = (token.start_index, token.end_index);
+                let operation = match token.token_type {
+                    TokenType::Plus => Operation::POS(unary_start, unary_end),
+                    TokenType::Minus => Operation::NEG(unary_start, unary_end),
+                    _ => {
+                        unreachable!()
+                    }
+                };
+                return Ok(Expression::UnaryExpression(UnaryExpression {
+                    start: unary_start.min(start),
+                    end: unary_end.max(end),
+                    expression: Box::new(factor),
+                    operation,
+                }));
+            }
             return Ok(factor);
         }
 

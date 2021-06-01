@@ -489,7 +489,18 @@ impl Walk for Expression {
                 ];
                 ast + &children.join("\n")
             }
-            Expression::UnaryExpression(_) => todo!(),
+            Expression::UnaryExpression(expr) => {
+                let ast = format!(
+                    "{}UnaryExpression {}\n",
+                    " ".repeat(2 * level),
+                    generate_codespan_postfix(self)
+                );
+                let children = vec![
+                    expr.operation.walk(level + 1),
+                    expr.expression.walk(level + 1),
+                ];
+                ast + &children.join("\n")
+            }
         }
     }
 }
@@ -501,7 +512,7 @@ impl Codespan for Expression {
             Expression::BinaryExpression(expr) => expr.start,
             Expression::Factor(expr) => expr.start(),
             Expression::LogicExpression(expr) => expr.start(),
-            Expression::UnaryExpression(_) => todo!(),
+            Expression::UnaryExpression(expr) => expr.start(),
         }
     }
 
@@ -511,7 +522,7 @@ impl Codespan for Expression {
             Expression::BinaryExpression(expr) => expr.end,
             Expression::Factor(expr) => expr.end(),
             Expression::LogicExpression(expr) => expr.end(),
-            Expression::UnaryExpression(_) => todo!(),
+            Expression::UnaryExpression(expr) => expr.end(),
         }
     }
 }
@@ -636,8 +647,10 @@ impl Display for Operation {
             Operation::OR(_, _) => {
                 write!(f, "OR")
             }
-            Operation::NEG(_, _) => todo!(),
-            Operation::POS(_, _) => todo!(),
+            Operation::NEG(_, _) => {
+                write!(f, "NEG")
+            },
+            Operation::POS(_, _) => write!(f, "POS"),
         }
     }
 }
@@ -656,8 +669,8 @@ impl Codespan for Operation {
             Operation::DIVIDE(start, _) => *start,
             Operation::AND(start, _) => *start,
             Operation::OR(start, _) => *start,
-            Operation::NEG(_, _) => todo!(),
-            Operation::POS(_, _) => todo!(),
+            Operation::NEG(start, _) => *start,
+            Operation::POS(start, _) => *start,
         }
     }
 
@@ -675,8 +688,8 @@ impl Codespan for Operation {
             Operation::DIVIDE(_, end) => *end,
             Operation::AND(_, end) => *end,
             Operation::OR(_, end) => *end,
-            Operation::NEG(_, _) => todo!(),
-            Operation::POS(_, _) => todo!(),
+            Operation::NEG(_, end) => *end,
+            Operation::POS(_, end) => *end,
         }
     }
 }
