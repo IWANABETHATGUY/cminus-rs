@@ -1,5 +1,4 @@
 #![feature(box_patterns)]
-#![feature(or_patterns)]
 mod error_emit;
 mod interpreter;
 mod lexer;
@@ -13,7 +12,7 @@ use std::{fs::read_to_string, time::Instant};
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/parser/test.txt");
+    let path = path::Path::new("tests/fixtures/interpreter/test.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();

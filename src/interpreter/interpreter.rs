@@ -322,6 +322,7 @@ impl Evaluate for Expression {
             Expression::Factor(factor) => factor.evaluate(env),
             Expression::Assignment(assignment) => assignment.evaluate(env),
             Expression::LogicExpression(logic_expr) => logic_expr.evaluate(env),
+            Expression::UnaryExpression(_) => todo!(),
         }
     }
 }

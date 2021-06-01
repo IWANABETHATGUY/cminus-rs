@@ -447,6 +447,7 @@ pub enum Expression {
     Assignment(AssignmentExpression),
     BinaryExpression(BinaryExpression),
     LogicExpression(LogicExpression),
+    UnaryExpression(UnaryExpression),
     Factor(Factor),
 }
 
@@ -488,6 +489,7 @@ impl Walk for Expression {
                 ];
                 ast + &children.join("\n")
             }
+            Expression::UnaryExpression(_) => todo!(),
         }
     }
 }
@@ -499,6 +501,7 @@ impl Codespan for Expression {
             Expression::BinaryExpression(expr) => expr.start,
             Expression::Factor(expr) => expr.start(),
             Expression::LogicExpression(expr) => expr.start(),
+            Expression::UnaryExpression(_) => todo!(),
         }
     }
 
@@ -508,6 +511,7 @@ impl Codespan for Expression {
             Expression::BinaryExpression(expr) => expr.end,
             Expression::Factor(expr) => expr.end(),
             Expression::LogicExpression(expr) => expr.end(),
+            Expression::UnaryExpression(_) => todo!(),
         }
     }
 }
@@ -561,6 +565,14 @@ pub struct LogicExpression {
 }
 
 #[derive(Debug, Clone, CodeSpan)]
+pub struct UnaryExpression {
+    pub(crate) expression: Box<Expression>,
+    pub(crate) operation: Operation,
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Debug, Clone, CodeSpan)]
 pub struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
@@ -582,6 +594,8 @@ pub enum Operation {
     DIVIDE(usize, usize),
     AND(usize, usize),
     OR(usize, usize),
+    NEG(usize, usize),
+    POS(usize, usize),
 }
 impl Display for Operation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -622,6 +636,8 @@ impl Display for Operation {
             Operation::OR(_, _) => {
                 write!(f, "OR")
             }
+            Operation::NEG(_, _) => todo!(),
+            Operation::POS(_, _) => todo!(),
         }
     }
 }
@@ -640,6 +656,8 @@ impl Codespan for Operation {
             Operation::DIVIDE(start, _) => *start,
             Operation::AND(start, _) => *start,
             Operation::OR(start, _) => *start,
+            Operation::NEG(_, _) => todo!(),
+            Operation::POS(_, _) => todo!(),
         }
     }
 
@@ -657,6 +675,8 @@ impl Codespan for Operation {
             Operation::DIVIDE(_, end) => *end,
             Operation::AND(_, end) => *end,
             Operation::OR(_, end) => *end,
+            Operation::NEG(_, _) => todo!(),
+            Operation::POS(_, _) => todo!(),
         }
     }
 }
