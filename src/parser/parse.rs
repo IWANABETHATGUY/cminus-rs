@@ -672,8 +672,8 @@ impl<'a> Parser<'a> {
                     }
                 };
                 return Ok(Expression::UnaryExpression(UnaryExpression {
-                    start: unary_start.min(start),
-                    end: unary_end.max(end),
+                    start: unary_start.min(factor.start()),
+                    end: unary_end.max(factor.end()),
                     expression: Box::new(factor),
                     operation,
                 }));

@@ -1,4 +1,4 @@
 void main() {
-  int res = 2 * -(2 + 3);
+  int res = 2 * -(2 + 7 + 8);
   print(res);
 }
