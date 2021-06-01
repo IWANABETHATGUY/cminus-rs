@@ -26,7 +26,7 @@
 - or-expression -> and-expression | or-expression || and-expression
 - and-expression -> simple-expression | and-expression && simple-expression
 - relop -> **<=** | **<** | **>=** | **>**| **==** | **!=** 
-- additive-expression -> additive-expression addop term | term
+- additive-expression -> additive-expression addop term | (unaryOp)? term
 - addop -> **+** | **-**
 - term -> term mulop term | factor
 - mulop  -> * | **/**
@@ -35,3 +35,4 @@
 - args -> arg-list | ε
 - arg-list -> arg-list expression | expression
 - BoolLiteral -> true | false
+- unaryOp -> '-' | '+'

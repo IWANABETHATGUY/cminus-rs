@@ -554,14 +554,30 @@ impl<'a> Parser<'a> {
         }
         Ok(left_factor)
     }
+    fn parse_unary_operator(&mut self) -> Option<Token> {
+        if let Some(token) = self.next_token() {
+            match token.token_type {
+                TokenType::Plus | TokenType::Minus => {
+                    let ret = Some(token.clone());
+                    self.consume(1);
+                    ret
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
 
     fn parse_factor(&mut self) -> Result<Expression, ()> {
+        let unary_token = self.parse_unary_operator();
+
         if let Some(token) = self.next_token() {
             let content = token.content.clone();
             let range = token.range();
             let start = token.start_index;
             let end = token.end_index;
-            match token.token_type {
+            let factor = match token.token_type {
                 TokenType::NumberLiteral => {
                     self.consume(1);
                     let value = if let Ok(value) = content.parse::<i32>() {
@@ -574,25 +590,21 @@ impl<'a> Parser<'a> {
                         );
                         return Err(());
                     };
-                    return Ok(Expression::Factor(Factor::NumberLiteral(NumberLiteral {
-                        value,
-                        start,
-                        end,
-                    })));
+                    Expression::Factor(Factor::NumberLiteral(NumberLiteral { value, start, end }))
                 }
                 TokenType::BooleanLiteral => {
                     self.consume(1);
-                    return Ok(Expression::Factor(Factor::BooleanLiteral(BooleanLiteral {
+                    Expression::Factor(Factor::BooleanLiteral(BooleanLiteral {
                         value: content.parse::<bool>().unwrap(),
                         start,
                         end,
-                    })));
+                    }))
                 }
                 TokenType::Lparen => {
                     self.consume(1);
                     let expression = self.parse_expression()?;
                     self.match_and_consume(TokenType::Rparen, true)?;
-                    return Ok(Expression::Factor(Factor::Expression(Box::new(expression))));
+                    Expression::Factor(Factor::Expression(Box::new(expression)))
                 }
                 TokenType::Id => {
                     let value = token.content.clone();
@@ -604,14 +616,12 @@ impl<'a> Parser<'a> {
                                 let arguments = self.parse_args()?;
                                 let call_expression_end =
                                     (self.match_and_consume(TokenType::Rparen, true)?).end_index;
-                                return Ok(Expression::Factor(Factor::CallExpression(
-                                    CallExpression {
-                                        arguments,
-                                        id: Identifier { value, start, end },
-                                        start,
-                                        end: call_expression_end,
-                                    },
-                                )));
+                                Expression::Factor(Factor::CallExpression(CallExpression {
+                                    arguments,
+                                    id: Identifier { value, start, end },
+                                    start,
+                                    end: call_expression_end,
+                                }))
                             }
                             TokenType::Lbrack => {
                                 self.consume(1);
@@ -624,24 +634,22 @@ impl<'a> Parser<'a> {
                                     start,
                                     end: var_end,
                                 };
-                                return Ok(Expression::Factor(Factor::Var(var)));
+                                Expression::Factor(Factor::Var(var))
                             }
-                            _ => {
-                                return Ok(Expression::Factor(Factor::Var(Var {
-                                    expression: None,
-                                    id: Identifier { value, start, end },
-                                    start,
-                                    end,
-                                })));
-                            }
+                            _ => Expression::Factor(Factor::Var(Var {
+                                expression: None,
+                                id: Identifier { value, start, end },
+                                start,
+                                end,
+                            })),
                         }
                     } else {
-                        return Ok(Expression::Factor(Factor::Var(Var {
+                        Expression::Factor(Factor::Var(Var {
                             expression: None,
                             id: Identifier { value, start, end },
                             start,
                             end,
-                        })));
+                        }))
                     }
                 }
                 _ => {
@@ -653,7 +661,24 @@ impl<'a> Parser<'a> {
                     );
                     return Err(());
                 }
+            };
+            if let Some(token) = unary_token {
+                let (unary_start, unary_end) = (token.start_index, token.end_index);
+                let operation = match token.token_type {
+                    TokenType::Plus => Operation::POS(unary_start, unary_end),
+                    TokenType::Minus => Operation::NEG(unary_start, unary_end),
+                    _ => {
+                        unreachable!()
+                    }
+                };
+                return Ok(Expression::UnaryExpression(UnaryExpression {
+                    start: unary_start.min(start),
+                    end: unary_end.max(end),
+                    expression: Box::new(factor),
+                    operation,
+                }));
             }
+            return Ok(factor);
         }
 
         self.error_reporter.add_diagnostic(
@@ -747,7 +772,7 @@ impl<'a> Parser<'a> {
         self.error_reporter.add_diagnostic(
             "main.cm",
             self.get_source_file_end_range(),
-            "expected `int` or `void`".into(),
+            "expected `int` , `void` or `bool` ".into(),
         );
         return Err(());
     }

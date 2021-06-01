@@ -322,6 +322,7 @@ impl Evaluate for Expression {
             Expression::Factor(factor) => factor.evaluate(env),
             Expression::Assignment(assignment) => assignment.evaluate(env),
             Expression::LogicExpression(logic_expr) => logic_expr.evaluate(env),
+            Expression::UnaryExpression(unary_expr) => unary_expr.evaluate(env),
         }
     }
 }
@@ -425,7 +426,6 @@ impl Evaluate for BinaryExpression {
         }
     }
 }
-
 impl Evaluate for LogicExpression {
     fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
         match self.operation {
@@ -467,6 +467,31 @@ impl Evaluate for LogicExpression {
         }
     }
 }
+
+impl Evaluate for UnaryExpression {
+    fn evaluate(&self, env: &mut Environment) -> Result<Binding, ()> {
+        match self.operation {
+            Operation::NEG(_, _) => {
+                let expr_eval = &self.expression.evaluate(env)?;
+                if let Binding::NumberLiteral(val) = expr_eval {
+                    Ok(Binding::NumberLiteral(-*val))
+                } else {
+                    return Err(());
+                }
+            }
+            Operation::POS(_, _) => {
+                let expr_eval = &self.expression.evaluate(env)?;
+                if let Binding::NumberLiteral(val) = expr_eval {
+                    Ok(Binding::NumberLiteral(*val))
+                } else {
+                    return Err(());
+                }
+            }
+            _ => unreachable!(), // TODO
+        }
+    }
+}
+
 
 #[inline]
 fn evaluate_binary_expression_literal(
