@@ -235,11 +235,11 @@ impl Codespan for Params {
         }
     }
 
-    fn set_start(&mut self, start: usize) {
+    fn set_start(&mut self, _start: usize) {
         unimplemented!() // TODO
     }
 
-    fn set_end(&mut self, end: usize) {
+    fn set_end(&mut self, _end: usize) {
         unimplemented!() // TODO
     }
 }
@@ -379,9 +379,9 @@ impl Codespan for Statement {
         }
     }
 
-    fn set_start(&mut self, start: usize) {}
+    fn set_start(&mut self, _start: usize) {}
 
-    fn set_end(&mut self, end: usize) {}
+    fn set_end(&mut self, _end: usize) {}
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct SelectionStatement {
@@ -558,9 +558,9 @@ impl Codespan for Expression {
         match self {
             Expression::Assignment(expr) => expr.start = start,
             Expression::BinaryExpression(expr) => expr.start = start,
-            Expression::Factor(expr) => unimplemented!(),
-            Expression::LogicExpression(expr) => unimplemented!(),
-            Expression::UnaryExpression(expr) => unimplemented!(),
+            Expression::Factor(_) => unimplemented!(),
+            Expression::LogicExpression(_) => unimplemented!(),
+            Expression::UnaryExpression(_) => unimplemented!(),
         };
     }
 
@@ -568,9 +568,9 @@ impl Codespan for Expression {
         match self {
             Expression::Assignment(expr) => expr.end = end,
             Expression::BinaryExpression(expr) => expr.end = end,
-            Expression::Factor(expr) => unimplemented!(),
-            Expression::LogicExpression(expr) => unimplemented!(),
-            Expression::UnaryExpression(expr) => unimplemented!(),
+            Expression::Factor(_) => unimplemented!(),
+            Expression::LogicExpression(_) => unimplemented!(),
+            Expression::UnaryExpression(_) => unimplemented!(),
         };
     }
 }
@@ -741,10 +741,10 @@ impl Codespan for Operation {
         }
     }
 
-    fn set_end(&mut self, end: usize) {
+    fn set_end(&mut self, _end: usize) {
         unimplemented!() // TODO
     }
-    fn set_start(&mut self, start: usize) {
+    fn set_start(&mut self, _start: usize) {
         unimplemented!() // TODO
     }
 }

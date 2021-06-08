@@ -12,7 +12,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut res = match parser.parse_program() {
         Ok(prog) => prog,
         Err(()) => {
-            parser.error_reporter.emit_std();
+            parser.error_reporter.emit_std().unwrap();
             panic!("error when parsing");
         }
     };
@@ -34,7 +34,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let mut _res = match parser.parse_program() {
                 Ok(prog) => prog,
                 Err(()) => {
-                    parser.error_reporter.emit_std();
+                    parser.error_reporter.emit_std().unwrap();
                     panic!("error when parsing");
                 }
             };
