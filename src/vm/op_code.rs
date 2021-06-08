@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 #[derive(Debug)]
 pub enum OpCode {
     // the first param to store the index in constant pool
@@ -16,6 +18,6 @@ pub enum OpCode {
     LessEqual,
 }
 
-pub fn disassemble_instruction(op: &OpCode, line_number: usize) {
-    println!("op: {:?}, line: {}", op, line_number);
+pub fn disassemble_instruction(op: &OpCode, line_number: Range<usize>) {
+    println!("op: {:?}, line: {:?}", op, line_number);
 }
