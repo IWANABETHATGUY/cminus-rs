@@ -1,11 +1,13 @@
-use super::{error::Error::*, vm::Vm, };
+use super::error::Error::*;
+use super::vm::Vm;
 use crate::parser::ast::*;
+use super::op_code::OpCode::*;
 pub trait EmitOperationCode {
-    fn emit(&self, vm: &mut Vm) -> anyhow::Result<()>;
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()>;
 }
 
 impl EmitOperationCode for Program {
-    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         if let Some(Declaration::FunctionDeclaration(func)) = self.declarations.last() {
             if &func.id.value != "main" {
                 return Err(
@@ -15,22 +17,31 @@ impl EmitOperationCode for Program {
         } else {
             return Err(RuntimeError("last declaration should be function").into());
         }
+        for decl in self.declarations.iter_mut() {
+            decl.emit(vm)?;
+        }
         Ok(())
     }
 }
 
 impl EmitOperationCode for Declaration {
-    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         match self {
             Declaration::FunctionDeclaration(_) => {}
-            Declaration::VarDeclaration(_) => {}
+            Declaration::VarDeclaration(var_decl) => {
+                let name = &var_decl.id.value;
+                let (start, end) = (var_decl.start, var_decl.end);
+                if let Some(init) = var_decl.initializer {
+                    vm.add_operation(Pop, end..end);
+                }
+            }
         }
         Ok(())
     }
 }
 
 impl EmitOperationCode for FunctionDeclaration {
-    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         Ok(())
     }
 }

@@ -1,12 +1,13 @@
+use std::ops::Range;
 use std::rc::Rc;
 
 use super::op_code::disassemble_instruction;
 use super::{op_code::OpCode, value::Value};
 use crate::util::variant_eq;
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 pub struct Vm {
-    instructions: Vec<OpCode>,
-    line_number: Vec<usize>,
+    operations: Vec<OpCode>,
+    line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
     globals: FxHashMap<String, Rc<Value>>,
 }
@@ -14,16 +15,16 @@ pub struct Vm {
 impl Vm {
     pub fn new() -> Self {
         Self {
-            instructions: vec![],
+            operations: vec![],
             line_number: vec![],
-            stack: Vec::with_capacity(256),
-            globals: FxHashMap::default(),
+            stack: vec![],
+            globals: FxHashMap::default()
         }
     }
 
     pub fn exec(&mut self) {
         use Value::*;
-        for (i, op) in self.instructions.iter().enumerate() {
+        for (i, op) in self.operations.iter().enumerate() {
             match op {
                 OpCode::ConstantI32(i) => {
                     self.stack.push(I32(*i));
@@ -72,33 +73,29 @@ impl Vm {
                 OpCode::Greater => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
-                    assert!(matches!(a, Value::I32(..)));
-                    assert!(matches!(b, Value::I32(..)));
-                    let res = Boolean(a > b);
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::Less => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
-                    assert!(matches!(a, Value::I32(..)));
-                    assert!(matches!(b, Value::I32(..)));
-                    let res = Boolean(a < b);
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::GreaterEqual => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
-                    assert!(matches!(a, Value::I32(..)));
-                    assert!(matches!(b, Value::I32(..)));
-                    let res = Boolean(a >= b);
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::LessEqual => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
-                    assert!(matches!(a, Value::I32(..)));
-                    assert!(matches!(b, Value::I32(..)));
-                    let res = Boolean(a <= b);
+                    assert!(variant_eq(&a, &b));
+                    let res = Boolean(a == b);
                     self.stack.push(res);
                 }
             }
@@ -111,8 +108,8 @@ impl Vm {
         }
     }
 
-    pub fn add_operation(&mut self, op: OpCode, line_number: usize) {
-        self.instructions.push(op);
+    pub fn add_operation(&mut self, op: OpCode, line_number: Range<usize>) {
+        self.operations.push(op);
         self.line_number.push(line_number);
     }
 
@@ -120,3 +117,4 @@ impl Vm {
         &self.stack
     }
 }
+
