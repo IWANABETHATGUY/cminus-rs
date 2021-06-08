@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use smol_str::SmolStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
     // the first param to store the index in constant pool
     ConstantI32(i32),

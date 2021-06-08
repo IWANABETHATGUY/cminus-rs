@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod vm_calc {
-    use tinylang_rs::vm::{op_code::OpCode, value::Value, vm::Vm};
+    use tinylang_rs::vm::{op_code::OpCode, value::Value, Vm};
     #[test]
     fn test_subtract_i32() {
         // 20 - 10
@@ -56,7 +56,7 @@ mod vm_calc {
         vm.add_operation(OpCode::AddI32, 0..0);
         vm.add_operation(OpCode::ConstantI32(3), 0..0);
         vm.add_operation(OpCode::DivideI32, 0..0);
-        vm.exec().unwrap();;
+        vm.exec().unwrap();
         assert_eq!(vm.stack(), &vec![Value::I32(2)]);
         
         // 1 * 2 + 3
@@ -66,7 +66,7 @@ mod vm_calc {
         vm.add_operation(OpCode::MultiplyI32, 0..0);
         vm.add_operation(OpCode::ConstantI32(3), 0..0);
         vm.add_operation(OpCode::AddI32, 0..0);
-        vm.exec().unwrap();;
+        vm.exec().unwrap();
         assert_eq!(vm.stack(), &vec![Value::I32(5)]);
         
         // 1 + 2 * 3
@@ -76,7 +76,7 @@ mod vm_calc {
         vm.add_operation(OpCode::ConstantI32(3), 0..0);
         vm.add_operation(OpCode::MultiplyI32, 0..0);
         vm.add_operation(OpCode::AddI32, 0..0);
-        vm.exec().unwrap();;
+        vm.exec().unwrap();
         assert_eq!(vm.stack(), &vec![Value::I32(7)]);
         
         // 3 - 2 - 1
@@ -86,7 +86,7 @@ mod vm_calc {
         vm.add_operation(OpCode::SubtractI32, 0..0);
         vm.add_operation(OpCode::ConstantI32(1), 0..0);
         vm.add_operation(OpCode::SubtractI32, 0..0);
-        vm.exec().unwrap();;
+        vm.exec().unwrap();
         assert_eq!(vm.stack(), &vec![Value::I32(0)]);
 
         // 1 + 2 * 3 - 4 / -5
@@ -95,12 +95,12 @@ mod vm_calc {
         vm.add_operation(OpCode::ConstantI32(2), 0..0);
         vm.add_operation(OpCode::ConstantI32(3), 0..0);
         vm.add_operation(OpCode::MultiplyI32, 0..0);
+        vm.add_operation(OpCode::AddI32, 0..0);
         vm.add_operation(OpCode::ConstantI32(4), 0..0);
         vm.add_operation(OpCode::ConstantI32(-5), 0..0);
         vm.add_operation(OpCode::DivideI32, 0..0);
         vm.add_operation(OpCode::SubtractI32, 0..0);
-        vm.add_operation(OpCode::AddI32, 0..0);
-        vm.exec().unwrap();;
+        vm.exec().unwrap();
         assert_eq!(vm.stack(), &vec![Value::I32(7)]);
     }
 
