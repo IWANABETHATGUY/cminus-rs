@@ -1,12 +1,11 @@
-use super::error::Error::*;
-use super::vm::Vm;
+use super::{error::Error::*, vm::Vm, };
 use crate::parser::ast::*;
 pub trait EmitOperationCode {
     fn emit(&self, vm: &mut Vm) -> anyhow::Result<()>;
 }
 
 impl EmitOperationCode for Program {
-    fn emit(&self, vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
         if let Some(Declaration::FunctionDeclaration(func)) = self.declarations.last() {
             if &func.id.value != "main" {
                 return Err(
@@ -21,7 +20,7 @@ impl EmitOperationCode for Program {
 }
 
 impl EmitOperationCode for Declaration {
-    fn emit(&self, vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
         match self {
             Declaration::FunctionDeclaration(_) => {}
             Declaration::VarDeclaration(_) => {}
@@ -31,7 +30,7 @@ impl EmitOperationCode for Declaration {
 }
 
 impl EmitOperationCode for FunctionDeclaration {
-    fn emit(&self, vm: &mut Vm) -> anyhow::Result<()> {
+    fn emit(&self, _vm: &mut Vm) -> anyhow::Result<()> {
         Ok(())
     }
 }

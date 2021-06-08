@@ -7,7 +7,7 @@ use lexer::lex::Lexer;
 mod util;
 use parser::{parse::Parser, Walk};
 use std::path;
-use std::{fs::read_to_string, time::Instant};
+use std::{fs::read_to_string};
 #[cfg(target_arch = "x86_64")]
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
