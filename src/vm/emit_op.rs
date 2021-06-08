@@ -31,9 +31,13 @@ impl EmitOperationCode for Declaration {
             Declaration::VarDeclaration(var_decl) => {
                 let name = &var_decl.id.value;
                 let (start, end) = (var_decl.start, var_decl.end);
-                if let Some(init) = var_decl.initializer {
-                    vm.add_operation(Pop, end..end);
+                if let Some(ref mut init) = var_decl.initializer {
+                    init.emit(vm)?;
+                    vm.define_variable(name.clone(), start..end);
+                } else {
+                    vm.add_operation(Nil, start..end);
                 }
+                vm.add_operation(Pop, end..end);
             }
         }
         Ok(())
@@ -46,6 +50,11 @@ impl EmitOperationCode for FunctionDeclaration {
     }
 }
 
+impl EmitOperationCode for Expression {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        todo!()
+    }
+}
 // impl EmitOperationCode for Expression {
 
 // }

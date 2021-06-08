@@ -1,15 +1,19 @@
 use std::ops::Range;
 use std::rc::Rc;
 
+use super::error::Error;
 use super::op_code::disassemble_instruction;
-use super::{op_code::OpCode, value::Value};
+use super::{op_code::OpCode::{self, *}, value::Value};
+use crate::exp_value;
 use crate::util::variant_eq;
-use rustc_hash::FxHashMap;
+use fxhash::FxHashMap;
+use smol_str::SmolStr;
+use anyhow::Result;
 pub struct Vm {
     operations: Vec<OpCode>,
     line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
-    globals: FxHashMap<String, Rc<Value>>,
+    globals: FxHashMap<SmolStr, Rc<Value>>,
 }
 
 impl Vm {
@@ -22,7 +26,7 @@ impl Vm {
         }
     }
 
-    pub fn exec(&mut self) {
+    pub fn exec(&mut self) -> Result<()> {
         use Value::*;
         for (i, op) in self.operations.iter().enumerate() {
             match op {
@@ -33,79 +37,86 @@ impl Vm {
                     self.stack.pop();
                 }
                 OpCode::SubtractI32 => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     self.stack.push(a - b);
                 }
                 OpCode::MultiplyI32 => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     self.stack.push(a * b);
                 }
                 OpCode::AddI32 => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     self.stack.push(a + b);
                 }
 
                 OpCode::DivideI32 => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     self.stack.push(a / b);
                 }
                 OpCode::ConstantBoolean(b) => {
                     self.stack.push(Boolean(*b));
                 }
                 OpCode::Equal => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::NotEqual => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a != b);
                     self.stack.push(res);
                 }
                 OpCode::Greater => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::Less => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::GreaterEqual => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a == b);
                     self.stack.push(res);
                 }
                 OpCode::LessEqual => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
+                    let b = exp_value!(self);
+                    let a = exp_value!(self);
                     assert!(variant_eq(&a, &b));
                     let res = Boolean(a == b);
                     self.stack.push(res);
                 }
+                OpCode::Pop => todo!(),
+                OpCode::DefineGlobal(name) => {
+                    let value = exp_value!(self);
+                    self.globals.insert(name.clone(), Rc::new(value));
+                },
+                OpCode::Nil => todo!(),
             }
             // DEBUG: start
             if cfg!(debug_assertions) {
-                disassemble_instruction(&op, self.line_number[i]);
+                disassemble_instruction(&op, self.line_number[i].clone());
                 println!("stack: {:?}", self.stack);
             }
             // DEBUG: end
         }
+        Ok(())
     }
 
     pub fn add_operation(&mut self, op: OpCode, line_number: Range<usize>) {
@@ -115,6 +126,10 @@ impl Vm {
 
     pub fn stack(&self) -> &Vec<Value> {
         &self.stack
+    }
+
+    pub fn define_variable(&mut self, name: SmolStr, range: Range<usize>) {
+        self.add_operation(DefineGlobal(name), range);
     }
 }
 
