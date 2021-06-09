@@ -25,7 +25,11 @@ pub enum OpCode {
     Pos,
 
     Pop,
-    DefineGlobal(SmolStr)
+    DefineGlobal(SmolStr),
+    GetGlobal(SmolStr),
+
+    GetLocal(usize),
+    SetLocal(usize),
 }
 
 pub fn disassemble_instruction(op: &OpCode, line_number: Range<usize>) {

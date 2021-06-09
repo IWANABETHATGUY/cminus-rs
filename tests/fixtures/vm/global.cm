@@ -1,2 +1,7 @@
 int a = 3 + 2 + 4;
-void main() {}
+int b = a;
+void main() {
+    int b = a + 1;
+    int c = a + b;
+    bool d = c > 1000;
+}
