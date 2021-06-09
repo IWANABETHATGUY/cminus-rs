@@ -36,14 +36,28 @@ impl EmitOperationCode for Declaration {
                 } else {
                     vm.add_operation(Nil, start..end);
                 }
-                vm.define_variable(name.clone(), start..end);
+                vm.define_variable(name.clone(), start..end)?;
                 vm.add_operation(Pop, end..end);
             }
         }
         Ok(())
     }
 }
-
+impl EmitOperationCode for Statement {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        match self {
+            Statement::CompoundStatement(stmt) => {
+                vm.begin_scope();
+                vm.end_scope();
+            },
+            Statement::ExpressionStatement(_) => todo!(),
+            Statement::SelectionStatement(_) => todo!(),
+            Statement::IterationStatement(_) => todo!(),
+            Statement::ReturnStatement(_) => todo!(),
+        }
+        Ok(())
+    }
+}
 impl EmitOperationCode for FunctionDeclaration {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         // TODO:

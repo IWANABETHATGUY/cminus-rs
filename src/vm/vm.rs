@@ -12,11 +12,44 @@ use crate::util::variant_eq;
 use fxhash::FxHashMap;
 use smol_str::SmolStr;
 #[derive(Debug)]
+struct Compiler {
+    locals: Vec<Local>,
+    scope_depth: i32,
+}
+
+impl Compiler {
+    fn new() -> Self {
+        Self {
+            scope_depth: 0,
+            locals: Vec::with_capacity(256),
+        }
+    }
+
+    pub fn local_count(&self) -> usize {
+        self.locals.len()
+    }
+
+    fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
+}
+
+#[derive(Debug)]
+struct Local {
+    pub(crate) name: SmolStr,
+    pub(crate) depth: i32,
+}
+#[derive(Debug)]
 pub struct Vm {
     operations: Vec<OpCode>,
     line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
     globals: FxHashMap<SmolStr, Rc<Value>>,
+    compiler: Compiler,
 }
 
 impl Vm {
@@ -26,6 +59,7 @@ impl Vm {
             line_number: vec![],
             stack: Vec::with_capacity(256),
             globals: FxHashMap::default(),
+            compiler: Compiler::new(),
         }
     }
     pub fn operations(&self) -> &Vec<OpCode> {
@@ -185,7 +219,43 @@ impl Vm {
         &self.stack
     }
 
-    pub fn define_variable(&mut self, name: SmolStr, range: Range<usize>) {
-        self.add_operation(DefineGlobal(name), range);
+    pub fn define_variable(&mut self, name: SmolStr, range: Range<usize>) -> anyhow::Result<()> {
+        if self.compiler.scope_depth > 0 {
+            self.check_if_variable_defined_in_same_scope(&name)?;
+            let depth = self.compiler.scope_depth;
+            let local = Local { depth, name };
+            self.compiler.locals.push(local);
+        } else {
+            self.add_operation(DefineGlobal(name), range);
+        }
+        Ok(())
+    }
+    pub fn begin_scope(&mut self) {
+        self.compiler.begin_scope();
+    }
+
+    pub fn end_scope(&mut self) {
+        self.compiler.end_scope();
+        let depth = self.compiler.scope_depth;
+        while let Some(local) = self.compiler.locals.last() {
+            if local.depth <= depth {
+                break;
+            }
+            self.compiler.locals.pop();
+            self.add_operation(Pop, 0..0);
+        }
+    }
+
+    fn check_if_variable_defined_in_same_scope(&mut self, name: &SmolStr) -> anyhow::Result<()> {
+        let depth = self.compiler.scope_depth;
+        for local in self.compiler.locals.iter().rev() {
+            if local.depth < depth {
+                break;
+            }
+            if &local.name == name {
+                return Err(RuntimeError(format!("{} has already defined in this scope", name)).into());
+            }
+        }
+        Ok(())
     }
 }
