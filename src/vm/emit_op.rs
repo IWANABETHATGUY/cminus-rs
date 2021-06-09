@@ -77,6 +77,9 @@ impl EmitOperationCode for CompoundStatement {
         for decl in self.local_declaration.iter_mut() {
             decl.emit(vm)?;
         }
+        for stmt in self.statement_list.iter_mut() {
+            stmt.emit(vm)?;
+        }
         vm.end_scope();
         Ok(())
     }

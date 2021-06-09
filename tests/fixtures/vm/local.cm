@@ -4,4 +4,7 @@ void main() {
     int b = a + 1;
     int c = a + b;
     bool d = c > 1000;
+    {
+        int b = b;
+    }
 }
