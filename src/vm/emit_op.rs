@@ -10,9 +10,10 @@ impl EmitOperationCode for Program {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         if let Some(Declaration::FunctionDeclaration(func)) = self.declarations.last() {
             if &func.id.value != "main" {
-                return Err(
-                    RuntimeError("last declaration should be function called 'main'".to_string()).into(),
-                );
+                return Err(RuntimeError(
+                    "last declaration should be function called 'main'".to_string(),
+                )
+                .into());
             }
         } else {
             return Err(RuntimeError("last declaration should be function".to_string()).into());
@@ -27,30 +28,41 @@ impl EmitOperationCode for Program {
 impl EmitOperationCode for Declaration {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         match self {
-            Declaration::FunctionDeclaration(_) => {}
+            Declaration::FunctionDeclaration(decl) => {
+                // TODO: params
+                decl.body.emit(vm)?;
+            }
             Declaration::VarDeclaration(var_decl) => {
-                let name = &var_decl.id.value;
-                let (start, end) = (var_decl.start, var_decl.end);
-                if let Some(ref mut init) = var_decl.initializer {
-                    init.emit(vm)?;
-                } else {
-                    vm.add_operation(Nil, start..end);
-                }
-                vm.define_variable(name.clone(), start..end)?;
-                vm.add_operation(Pop, end..end);
+                var_decl.emit(vm)?;
             }
         }
         Ok(())
     }
 }
+impl EmitOperationCode for VarDeclaration {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        let name = &self.id.value;
+        let (start, end) = (self.start, self.end);
+        if let Some(ref mut init) = self.initializer {
+            init.emit(vm)?;
+        } else {
+            vm.add_operation(Nil, start..end);
+        }
+        vm.define_variable(name.clone(), start..end)?;
+        if vm.scope_depth() == 0 {
+            vm.add_operation(Pop, end..end);
+        }
+        Ok(())
+    }
+}
+
 impl EmitOperationCode for Statement {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         match self {
             Statement::CompoundStatement(stmt) => {
-                vm.begin_scope();
-                vm.end_scope();
-            },
-            Statement::ExpressionStatement(_) => todo!(),
+                stmt.emit(vm)?;
+            }
+            Statement::ExpressionStatement(stmt) => todo!(),
             Statement::SelectionStatement(_) => todo!(),
             Statement::IterationStatement(_) => todo!(),
             Statement::ReturnStatement(_) => todo!(),
@@ -58,6 +70,18 @@ impl EmitOperationCode for Statement {
         Ok(())
     }
 }
+
+impl EmitOperationCode for CompoundStatement {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        vm.begin_scope();
+        for decl in self.local_declaration.iter_mut() {
+            decl.emit(vm)?;
+        }
+        vm.end_scope();
+        Ok(())
+    }
+}
+
 impl EmitOperationCode for FunctionDeclaration {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         // TODO:
@@ -68,7 +92,7 @@ impl EmitOperationCode for FunctionDeclaration {
 impl EmitOperationCode for Expression {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         match self {
-            Expression::Assignment(_) => todo!(),
+            Expression::Assignment(assign) => todo!(),
             Expression::BinaryExpression(expr) => {
                 expr.left.emit(vm)?;
                 expr.right.emit(vm)?;
@@ -103,7 +127,7 @@ impl EmitOperationCode for Expression {
                     Operation::DIVIDE(s, e) => {
                         vm.add_operation(DivideI32, s..e);
                     }
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             }
             Expression::LogicExpression(expr) => {
@@ -139,7 +163,13 @@ impl EmitOperationCode for Expression {
                 Factor::Expression(expr) => {
                     expr.emit(vm)?;
                 }
-                Factor::Var(_) => todo!(),
+                Factor::Var(var) => {
+                    if let Some(index) = vm.resolve_local(&var.id.value) {
+                        vm.add_operation(GetLocal(index), var.start..var.end);
+                    } else {
+                        vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
+                    }
+                }
                 Factor::CallExpression(_) => todo!(),
                 Factor::NumberLiteral(NumberLiteral { value, start, end }) => {
                     vm.add_operation(ConstantI32(*value), *start..*end);

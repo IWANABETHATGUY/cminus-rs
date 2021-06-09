@@ -48,7 +48,7 @@ pub struct Vm {
     operations: Vec<OpCode>,
     line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
-    globals: FxHashMap<SmolStr, Rc<Value>>,
+    globals: FxHashMap<SmolStr, Value>,
     compiler: Compiler,
 }
 
@@ -141,13 +141,7 @@ impl Vm {
                     assert!(matches!(b, Value::I32(..)));
                     self.stack.push(Value::Boolean(a <= b));
                 }
-                Pop => {
-                    self.stack.pop();
-                }
-                DefineGlobal(name) => {
-                    let value = expect_value!(self);
-                    self.globals.insert(name.clone(), Rc::new(value));
-                }
+
                 And => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
@@ -198,7 +192,29 @@ impl Vm {
                         .into());
                     }
                 }
+                Pop => {
+                    self.stack.pop();
+                }
+                DefineGlobal(name) => {
+                    let value = expect_value!(self);
+                    self.globals.insert(name.clone(), value);
+                }
                 Nil => todo!(),
+                GetGlobal(name) => {
+                    if let Some(value) = self.globals.get(name) {
+                        self.stack.push(value.clone());
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at range: {:?}, variable {} not defined",
+                            self.line_number[i], name
+                        ))
+                        .into());
+                    }
+                }
+                GetLocal(index) => {
+                    self.stack.push(self.stack[*index].clone());
+                }
+                SetLocal(_) => todo!(),
             }
             // DEBUG: start
             if cfg!(debug_assertions) {
@@ -253,9 +269,22 @@ impl Vm {
                 break;
             }
             if &local.name == name {
-                return Err(RuntimeError(format!("{} has already defined in this scope", name)).into());
+                return Err(
+                    RuntimeError(format!("{} has already defined in this scope", name)).into(),
+                );
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn resolve_local(&self, name: &SmolStr) -> Option<usize> {
+        self.compiler
+            .locals
+            .iter()
+            .position(|item| &item.name == name)
+    }
+
+    pub fn scope_depth(&self) -> i32 {
+        self.compiler.scope_depth
     }
 }
