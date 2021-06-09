@@ -220,8 +220,10 @@ impl Vm {
             }
             // DEBUG: start
             if cfg!(debug_assertions) {
+                println!("-------start--------");
                 disassemble_instruction(&op, self.line_number[i].clone());
                 println!("stack: {:?}", self.stack);
+                println!("locals: {:?}", self.compiler.locals);
             }
             // DEBUG: end
         }
@@ -243,6 +245,7 @@ impl Vm {
             let depth = self.compiler.scope_depth;
             let local = Local { depth, name };
             self.compiler.locals.push(local);
+            // println!("local: {:?}", self.compiler.locals);
         } else {
             self.add_operation(DefineGlobal(name), range);
         }
