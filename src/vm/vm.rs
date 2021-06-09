@@ -214,7 +214,9 @@ impl Vm {
                 GetLocal(index) => {
                     self.stack.push(self.stack[*index].clone());
                 }
-                SetLocal(_) => todo!(),
+                SetLocal(index) => {
+                    todo!();
+                },
             }
             // DEBUG: start
             if cfg!(debug_assertions) {

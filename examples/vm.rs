@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use tinylang_rs::{lexer::lex, parser::parse::Parser, vm::{EmitOperationCode, Vm}};
 use std::path;
 fn main() -> Result<()> {
-    let path = path::Path::new("tests/fixtures/vm/global.cm");
+    let path = path::Path::new("tests/fixtures/vm/local.cm");
     let content = read_to_string(path)?;
     let mut lex = lex::Lexer::new(&content);
     let source_code = read_to_string(path)?;
