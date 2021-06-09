@@ -19,6 +19,10 @@ pub enum OpCode {
     Less,
     GreaterEqual,
     LessEqual,
+    And,
+    Or,
+    Neg,
+    Pos,
 
     Pop,
     DefineGlobal(SmolStr)

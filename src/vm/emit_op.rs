@@ -11,11 +11,11 @@ impl EmitOperationCode for Program {
         if let Some(Declaration::FunctionDeclaration(func)) = self.declarations.last() {
             if &func.id.value != "main" {
                 return Err(
-                    RuntimeError("last declaration should be function called 'main'").into(),
+                    RuntimeError("last declaration should be function called 'main'".to_string()).into(),
                 );
             }
         } else {
-            return Err(RuntimeError("last declaration should be function").into());
+            return Err(RuntimeError("last declaration should be function".to_string()).into());
         }
         for decl in self.declarations.iter_mut() {
             decl.emit(vm)?;
@@ -89,14 +89,38 @@ impl EmitOperationCode for Expression {
                     Operation::DIVIDE(s, e) => {
                         vm.add_operation(DivideI32, s..e);
                     }
-                    Operation::AND(_, _) => todo!(),
-                    Operation::OR(_, _) => todo!(),
-                    Operation::NEG(_, _) => todo!(),
-                    Operation::POS(_, _) => todo!(),
+                    _ => unreachable!()
                 }
             }
-            Expression::LogicExpression(_) => todo!(),
-            Expression::UnaryExpression(_) => todo!(),
+            Expression::LogicExpression(expr) => {
+                expr.left.emit(vm)?;
+                expr.right.emit(vm)?;
+                match expr.operation {
+                    Operation::AND(s, e) => {
+                        vm.add_operation(And, s..e);
+                    }
+                    Operation::OR(s, e) => {
+                        vm.add_operation(Or, s..e);
+                    }
+                    _ => {
+                        unreachable!();
+                    }
+                }
+            }
+            Expression::UnaryExpression(expr) => {
+                expr.expression.emit(vm)?;
+                match expr.operation {
+                    Operation::NEG(s, e) => {
+                        vm.add_operation(Neg, s..e);
+                    }
+                    Operation::POS(s, e) => {
+                        vm.add_operation(Pos, s..e);
+                    }
+                    _ => {
+                        unreachable!();
+                    }
+                }
+            }
             Expression::Factor(expr) => match expr {
                 Factor::Expression(expr) => {
                     expr.emit(vm)?;
@@ -106,7 +130,9 @@ impl EmitOperationCode for Expression {
                 Factor::NumberLiteral(NumberLiteral { value, start, end }) => {
                     vm.add_operation(ConstantI32(*value), *start..*end);
                 }
-                Factor::BooleanLiteral(_) => todo!(),
+                Factor::BooleanLiteral(BooleanLiteral { value, start, end }) => {
+                    vm.add_operation(ConstantBoolean(*value), *start..*end);
+                }
             },
         }
         Ok(())
