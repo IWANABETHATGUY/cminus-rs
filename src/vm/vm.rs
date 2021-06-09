@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::rc::Rc;
 
-use super::error::Error;
+use super::error::Error::{self, *};
 use super::op_code::disassemble_instruction;
 use super::{
     op_code::OpCode::{self, *},
@@ -9,7 +9,6 @@ use super::{
 };
 use crate::expect_value;
 use crate::util::variant_eq;
-use anyhow::Result;
 use fxhash::FxHashMap;
 use smol_str::SmolStr;
 #[derive(Debug)]
@@ -25,7 +24,7 @@ impl Vm {
         Self {
             operations: vec![],
             line_number: vec![],
-            stack: vec![],
+            stack: Vec::with_capacity(256),
             globals: FxHashMap::default(),
         }
     }
@@ -33,90 +32,139 @@ impl Vm {
         &self.operations
     }
 
-    pub fn exec(&mut self) -> Result<()> {
-        use Value::*;
+    pub fn exec(&mut self) -> anyhow::Result<()> {
         for (i, op) in self.operations.iter().enumerate() {
             match op {
-                OpCode::ConstantI32(i) => {
-                    self.stack.push(I32(*i));
+                ConstantI32(i) => {
+                    self.stack.push(Value::I32(*i));
                 }
-                OpCode::Return => {
+                Return => {
                     self.stack.pop();
                 }
-                OpCode::SubtractI32 => {
+                SubtractI32 => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     self.stack.push(a - b);
                 }
-                OpCode::MultiplyI32 => {
+                MultiplyI32 => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     self.stack.push(a * b);
                 }
-                OpCode::AddI32 => {
+                AddI32 => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     self.stack.push(a + b);
                 }
 
-                OpCode::DivideI32 => {
+                DivideI32 => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     self.stack.push(a / b);
                 }
-                OpCode::ConstantBoolean(b) => {
-                    self.stack.push(Boolean(*b));
+                ConstantBoolean(b) => {
+                    self.stack.push(Value::Boolean(*b));
                 }
-                OpCode::Equal => {
+                Equal => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     assert!(variant_eq(&a, &b));
-                    let res = Boolean(a == b);
+                    let res = Value::Boolean(a == b);
                     self.stack.push(res);
                 }
-                OpCode::NotEqual => {
+                NotEqual => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
                     assert!(variant_eq(&a, &b));
-                    let res = Boolean(a != b);
+                    let res = Value::Boolean(a != b);
                     self.stack.push(res);
                 }
-                OpCode::Greater => {
+                Greater => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
-                    assert!(variant_eq(&a, &b));
-                    let res = Boolean(a == b);
-                    self.stack.push(res);
+                    assert!(matches!(a, Value::I32(..)));
+                    assert!(matches!(b, Value::I32(..)));
+                    self.stack.push(Value::Boolean(a > b));
                 }
-                OpCode::Less => {
+                Less => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
-                    assert!(variant_eq(&a, &b));
-                    let res = Boolean(a == b);
-                    self.stack.push(res);
+                    assert!(matches!(a, Value::I32(..)));
+                    assert!(matches!(b, Value::I32(..)));
+                    self.stack.push(Value::Boolean(a < b));
                 }
-                OpCode::GreaterEqual => {
+                GreaterEqual => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
-                    assert!(variant_eq(&a, &b));
-                    let res = Boolean(a == b);
-                    self.stack.push(res);
+                    assert!(matches!(a, Value::I32(..)));
+                    assert!(matches!(b, Value::I32(..)));
+                    self.stack.push(Value::Boolean(a >= b));
                 }
-                OpCode::LessEqual => {
+                LessEqual => {
                     let b = expect_value!(self);
                     let a = expect_value!(self);
-                    assert!(variant_eq(&a, &b));
-                    let res = Boolean(a == b);
-                    self.stack.push(res);
+                    assert!(matches!(a, Value::I32(..)));
+                    assert!(matches!(b, Value::I32(..)));
+                    self.stack.push(Value::Boolean(a <= b));
                 }
-                OpCode::Pop => {
+                Pop => {
                     self.stack.pop();
-                },
-                OpCode::DefineGlobal(name) => {
+                }
+                DefineGlobal(name) => {
                     let value = expect_value!(self);
                     self.globals.insert(name.clone(), Rc::new(value));
                 }
-                OpCode::Nil => todo!(),
+                And => {
+                    let b = expect_value!(self);
+                    let a = expect_value!(self);
+                    if let (Value::Boolean(left), Value::Boolean(right)) = (a, b) {
+                        self.stack.push(Value::Boolean(left && right));
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at range: {:?}, expected boolean value",
+                            self.line_number[i]
+                        ))
+                        .into());
+                    }
+                }
+                Or => {
+                    let b = expect_value!(self);
+                    let a = expect_value!(self);
+                    if let (Value::Boolean(left), Value::Boolean(right)) = (a, b) {
+                        self.stack.push(Value::Boolean(left || right));
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at range: {:?}, expected boolean value",
+                            self.line_number[i]
+                        ))
+                        .into());
+                    }
+                }
+                Neg => {
+                    let a = expect_value!(self);
+                    if let Value::I32(v) = a {
+                        self.stack.push(Value::I32(-v));
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at range: {:?}, expected integer value, operation negative",
+                            self.line_number[i]
+                        ))
+                        .into());
+                    }
+                }
+                Pos => {
+                    let a = expect_value!(self);
+                    if let Value::I32(v) = a {
+                        self.stack.push(Value::I32(v));
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at range: {:?}, expected integer value, operation positive",
+                            self.line_number[i]
+                        ))
+                        .into());
+                    }
+                }
+                Nil => todo!(),
             }
             // DEBUG: start
             if cfg!(debug_assertions) {
