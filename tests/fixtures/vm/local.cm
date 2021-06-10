@@ -1,13 +1,9 @@
 void main() {
-    if (2 > 2 && 3 > 2) {
-        int a = 3;
-        int b = a + 2;
-        a = b;
-        {
-            int d = 1000 + a;
-        }
+    int a = 3;
+    while (a < 1000000) {
+        a = a + 1;
     } 
     {
-        int a = 3;
+        int a = a;
     }
 }

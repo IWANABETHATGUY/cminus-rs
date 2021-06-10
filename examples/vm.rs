@@ -2,6 +2,10 @@ use anyhow::Result;
 use std::fs::read_to_string;
 use tinylang_rs::{lexer::lex, parser::parse::Parser, vm::{EmitOperationCode, Vm}};
 use std::path;
+use std::time::Instant;
+#[cfg(target_arch = "x86_64")]
+#[global_allocator]
+static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<()> {
     let path = path::Path::new("tests/fixtures/vm/local.cm");
     let content = read_to_string(path)?;
@@ -10,6 +14,7 @@ fn main() -> Result<()> {
     let list = lex.lex();
     // println!("{:?}", list);
     let mut parser = Parser::new(list, &source_code);
+    let now = Instant::now();
     let mut program = match parser.parse_program() {
         Ok(prog) => prog,
         Err(_) => {
@@ -19,9 +24,10 @@ fn main() -> Result<()> {
     };
     let mut vm = Vm::new();
     program.emit(&mut vm)?;
-    println!("{:?}", vm);
+    // println!("{:?}", vm);
     vm.exec()?;
-    println!("{:?}",vm);
+    // println!("{:?}",vm);
     // let start = Instant::now();
+    println!("{:?}", now.elapsed());
     Ok(())
 }

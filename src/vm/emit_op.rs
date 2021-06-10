@@ -69,9 +69,23 @@ impl EmitOperationCode for Statement {
             SelectionStatement(stmt) => {
                 stmt.emit(vm)?;
             }
-            IterationStatement(_) => todo!(),
+            IterationStatement(stmt) => {
+                stmt.emit(vm)?;
+            }
             ReturnStatement(_) => todo!(),
         }
+        Ok(())
+    }
+}
+impl EmitOperationCode for IterationStatement {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        let loop_start = vm.operations().len();
+        self.test.emit(vm)?;
+        let exit_jump = vm.emit_jump(JumpIfFalse(0), self.start..self.end);
+        vm.add_operation(Pop, self.test.start()..self.test.end());
+        self.body.emit(vm)?;
+        vm.emit_loop(loop_start, self.body.start()..self.body.end());
+        vm.patch_jump(exit_jump)?;
         Ok(())
     }
 }
@@ -132,7 +146,7 @@ impl EmitOperationCode for Expression {
                     vm.add_operation(SetLocal(index), lhs.id.start..lhs.id.end);
                 } else {
                     unimplemented!() // TODO:
-                    // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
+                                     // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
                 }
             }
             Expression::BinaryExpression(expr) => {

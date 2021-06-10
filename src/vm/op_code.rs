@@ -5,8 +5,6 @@ use smol_str::SmolStr;
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
     // the first param to store the index in constant pool
-    ConstantI32(i32),
-    ConstantBoolean(bool),
     Nil,
     Return,
     SubtractI32,
@@ -25,6 +23,10 @@ pub enum OpCode {
     Pos,
 
     Pop,
+
+    ConstantI32(i32),
+    ConstantBoolean(bool),
+
     DefineGlobal(SmolStr),
     GetGlobal(SmolStr),
 
@@ -33,6 +35,8 @@ pub enum OpCode {
 
     JumpIfFalse(usize),
     Jump(usize),
+
+    Loop(usize),
 }
 
 pub fn disassemble_instruction(op: &OpCode, line_number: Range<usize>) {
