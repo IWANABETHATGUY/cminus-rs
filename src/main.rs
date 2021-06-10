@@ -7,12 +7,13 @@ use lexer::lex::Lexer;
 mod util;
 use parser::{parse::Parser, Walk};
 use std::path;
+use std::time::Instant;
 use std::{fs::read_to_string};
 #[cfg(target_arch = "x86_64")]
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/interpreter/test.txt");
+    let path = path::Path::new("tests/fixtures/vm/local.cm");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
@@ -25,7 +26,7 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
     };
-    // let start = Instant::now();
+    let start = Instant::now();
     match interpreter::interpret(&mut res, false) {
         Ok(env) => {
             println!("{}", env.get_std_simulator_string());
@@ -34,7 +35,7 @@ fn main() -> Result<(), std::io::Error> {
             println!("interpreter error",);
         }
     };
-    // println!("total: {:?}", start.elapsed());
-    println!("{}", res.walk(0));
+    println!("total: {:?}", start.elapsed());
+    // println!("{}", res.walk(0));
     Ok(())
 }

@@ -243,6 +243,9 @@ impl Vm {
                     self.ip += offset;
                     continue;
                 }
+                Loop(offset) => {
+                    self.ip -= offset;
+                },
             }
             trace!(self, op);
             self.ip += 1;
@@ -342,5 +345,10 @@ impl Vm {
             );
         }
         Ok(())
+    }
+
+    pub(crate) fn emit_loop(&mut self, loop_start: usize, range: Range<usize>) {
+        let offset = self.operations.len() - loop_start;
+        self.add_operation(Loop(offset), range);
     }
 }
