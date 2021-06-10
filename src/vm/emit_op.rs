@@ -50,7 +50,7 @@ impl EmitOperationCode for VarDeclaration {
         }
         vm.define_variable(name.clone(), start..end)?;
         if vm.scope_depth() == 0 {
-            vm.add_operation(Pop, end..end);
+            vm.add_operation(Pop, 10000000..10000000);
         }
         Ok(())
     }
@@ -58,15 +58,45 @@ impl EmitOperationCode for VarDeclaration {
 
 impl EmitOperationCode for Statement {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        use Statement::*;
         match self {
-            Statement::CompoundStatement(stmt) => {
+            CompoundStatement(stmt) => {
                 stmt.emit(vm)?;
             }
-            Statement::ExpressionStatement(stmt) => todo!(),
-            Statement::SelectionStatement(_) => todo!(),
-            Statement::IterationStatement(_) => todo!(),
-            Statement::ReturnStatement(_) => todo!(),
+            ExpressionStatement(stmt) => {
+                stmt.emit(vm)?;
+            }
+            SelectionStatement(stmt) => {
+                stmt.emit(vm)?;
+            }
+            IterationStatement(_) => todo!(),
+            ReturnStatement(_) => todo!(),
         }
+        Ok(())
+    }
+}
+
+impl EmitOperationCode for ExpressionStatement {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        if let Some(ref mut expr) = self.expression {
+            expr.emit(vm)?;
+        }
+        Ok(())
+    }
+}
+impl EmitOperationCode for SelectionStatement {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        self.test.emit(vm)?;
+        let then_jump = vm.emit_jump(JumpIfFalse(0), self.start..self.end);
+        vm.add_operation(Pop, self.end..self.end);
+        self.consequent.emit(vm)?;
+        let else_jump = vm.emit_jump(Jump(0), self.start..self.end);
+        vm.patch_jump(then_jump)?;
+        vm.add_operation(Pop, self.end..self.end);
+        if let Some(ref mut alternative) = self.alternative {
+            alternative.emit(vm)?;
+        }
+        vm.patch_else_jump(else_jump)?;
         Ok(())
     }
 }
@@ -95,7 +125,16 @@ impl EmitOperationCode for FunctionDeclaration {
 impl EmitOperationCode for Expression {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         match self {
-            Expression::Assignment(assign) => todo!(),
+            Expression::Assignment(assign) => {
+                assign.rhs.emit(vm)?;
+                let lhs = &assign.lhs;
+                if let Some(index) = vm.resolve_local(&lhs.id.value) {
+                    vm.add_operation(SetLocal(index), lhs.id.start..lhs.id.end);
+                } else {
+                    unimplemented!() // TODO:
+                    // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
+                }
+            }
             Expression::BinaryExpression(expr) => {
                 expr.left.emit(vm)?;
                 expr.right.emit(vm)?;

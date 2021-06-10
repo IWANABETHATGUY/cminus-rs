@@ -30,6 +30,9 @@ pub enum OpCode {
 
     GetLocal(usize),
     SetLocal(usize),
+
+    JumpIfFalse(usize),
+    Jump(usize),
 }
 
 pub fn disassemble_instruction(op: &OpCode, line_number: Range<usize>) {
