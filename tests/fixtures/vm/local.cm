@@ -5,6 +5,6 @@ void main() {
     int c = a + b;
     bool d = c > 1000;
     {
-        int b = b;
+        int b = c + b;
     }
 }
