@@ -1,10 +1,13 @@
-int a = 3 + 2 + 4;
-int b = a;
 void main() {
-    int b = a + 1;
-    int c = a + b;
-    bool d = c > 1000;
+    if (2 > 2 && 3 > 2) {
+        int a = 3;
+        int b = a + 2;
+        a = b;
+        {
+            int d = 1000 + a;
+        }
+    } 
     {
-        int b = c + b;
+        int a = 3;
     }
 }

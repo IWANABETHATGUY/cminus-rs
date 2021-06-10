@@ -8,6 +8,7 @@ use super::{
     value::Value,
 };
 use crate::expect_value;
+use crate::trace;
 use crate::util::variant_eq;
 use fxhash::FxHashMap;
 use smol_str::SmolStr;
@@ -50,6 +51,7 @@ pub struct Vm {
     stack: Vec<Value>,
     globals: FxHashMap<SmolStr, Value>,
     compiler: Compiler,
+    ip: usize,
 }
 
 impl Vm {
@@ -60,6 +62,7 @@ impl Vm {
             stack: Vec::with_capacity(256),
             globals: FxHashMap::default(),
             compiler: Compiler::new(),
+            ip: 0,
         }
     }
     pub fn operations(&self) -> &Vec<OpCode> {
@@ -67,7 +70,8 @@ impl Vm {
     }
 
     pub fn exec(&mut self) -> anyhow::Result<()> {
-        for (i, op) in self.operations.iter().enumerate() {
+        while self.ip < self.operations.len() {
+            let op = &self.operations[self.ip];
             match op {
                 ConstantI32(i) => {
                     self.stack.push(Value::I32(*i));
@@ -150,7 +154,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected boolean value",
-                            self.line_number[i]
+                            self.line_number[self.ip]
                         ))
                         .into());
                     }
@@ -163,7 +167,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected boolean value",
-                            self.line_number[i]
+                            self.line_number[self.ip]
                         ))
                         .into());
                     }
@@ -175,7 +179,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected integer value, operation negative",
-                            self.line_number[i]
+                            self.line_number[self.ip]
                         ))
                         .into());
                     }
@@ -187,7 +191,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected integer value, operation positive",
-                            self.line_number[i]
+                            self.line_number[self.ip]
                         ))
                         .into());
                     }
@@ -206,7 +210,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, variable {} not defined",
-                            self.line_number[i], name
+                            self.line_number[self.ip], name
                         ))
                         .into());
                     }
@@ -215,17 +219,33 @@ impl Vm {
                     self.stack.push(self.stack[*index].clone());
                 }
                 SetLocal(index) => {
-                    todo!();
-                },
+                    self.stack[*index] = self.stack.last().unwrap().clone();
+                }
+                JumpIfFalse(offset) => {
+                    if let Some(Value::Boolean(v)) = self.stack.last() {
+                        if !*v {
+                            trace!(self, op);
+                            println!("ip: {}, offset: {}", self.ip, offset);
+                            self.ip += offset;
+                            continue;
+                        }
+                    } else {
+                        return Err(RuntimeError(format!(
+                            "error at {:?}, peek of stack should be a boolean",
+                            self.line_number[self.ip]
+                        ))
+                        .into());
+                    }
+                }
+                Jump(offset) => {
+                    trace!(self, op);
+                    println!("ip: {}, offset: {}", self.ip, offset);
+                    self.ip += offset;
+                    continue;
+                }
             }
-            // DEBUG: start
-            if cfg!(debug_assertions) {
-                println!("-------start--------");
-                disassemble_instruction(&op, self.line_number[i].clone());
-                println!("stack: {:?}", self.stack);
-                println!("locals: {:?}", self.compiler.locals);
-            }
-            // DEBUG: end
+            trace!(self, op);
+            self.ip += 1;
         }
         Ok(())
     }
@@ -262,8 +282,8 @@ impl Vm {
             if local.depth <= depth {
                 break;
             }
-            self.compiler.locals.pop();
             self.add_operation(Pop, 0..0);
+            self.compiler.locals.pop();
         }
     }
 
@@ -291,5 +311,36 @@ impl Vm {
 
     pub fn scope_depth(&self) -> i32 {
         self.compiler.scope_depth
+    }
+
+    pub(crate) fn emit_jump(&mut self, op: OpCode, range: Range<usize>) -> usize {
+        self.add_operation(op, range);
+        self.operations.len() - 1
+    }
+
+    pub(crate) fn patch_jump(&mut self, index: usize) -> anyhow::Result<()> {
+        let new_offset = self.operations.len() - index;
+        if let JumpIfFalse(ref mut offset) = self.operations[index] {
+            *offset = new_offset;
+        } else {
+            return Err(RuntimeError(format!(
+                "operation should be JumpIfFalse at index {}",
+                index
+            ))
+            .into());
+        }
+        Ok(())
+    }
+
+    pub(crate) fn patch_else_jump(&mut self, index: usize) -> anyhow::Result<()> {
+        let new_offset = self.operations.len() - index - 1;
+        if let Jump(ref mut offset) = self.operations[index] {
+            *offset = new_offset;
+        } else {
+            return Err(
+                RuntimeError(format!("operation should be Jump at index {}", index)).into(),
+            );
+        }
+        Ok(())
     }
 }
