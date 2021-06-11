@@ -16,6 +16,7 @@ use smol_str::SmolStr;
 struct Compiler {
     locals: Vec<Local>,
     scope_depth: i32,
+    
 }
 
 impl Compiler {
@@ -46,7 +47,7 @@ struct Local {
 }
 #[derive(Debug)]
 pub struct Vm {
-    operations: Vec<OpCode>,
+    instructions: Vec<OpCode>,
     line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
     globals: FxHashMap<SmolStr, Value>,
@@ -57,7 +58,7 @@ pub struct Vm {
 impl Vm {
     pub fn new() -> Self {
         Self {
-            operations: vec![],
+            instructions: vec![],
             line_number: vec![],
             stack: Vec::with_capacity(256),
             globals: FxHashMap::default(),
@@ -66,12 +67,12 @@ impl Vm {
         }
     }
     pub fn operations(&self) -> &Vec<OpCode> {
-        &self.operations
+        &self.instructions
     }
 
     pub fn exec(&mut self) -> anyhow::Result<()> {
-        while self.ip < self.operations.len() {
-            let op = &self.operations[self.ip];
+        while self.ip < self.instructions.len() {
+            let op = &self.instructions[self.ip];
             match op {
                 ConstantI32(i) => {
                     self.stack.push(Value::I32(*i));
@@ -253,8 +254,8 @@ impl Vm {
         Ok(())
     }
 
-    pub fn add_operation(&mut self, op: OpCode, line_number: Range<usize>) {
-        self.operations.push(op);
+    pub fn add_instruction(&mut self, op: OpCode, line_number: Range<usize>) {
+        self.instructions.push(op);
         self.line_number.push(line_number);
     }
 
@@ -270,7 +271,7 @@ impl Vm {
             self.compiler.locals.push(local);
             // println!("local: {:?}", self.compiler.locals);
         } else {
-            self.add_operation(DefineGlobal(name), range);
+            self.add_instruction(DefineGlobal(name), range);
         }
         Ok(())
     }
@@ -285,7 +286,7 @@ impl Vm {
             if local.depth <= depth {
                 break;
             }
-            self.add_operation(Pop, 0..0);
+            self.add_instruction(Pop, 0..0);
             self.compiler.locals.pop();
         }
     }
@@ -317,13 +318,13 @@ impl Vm {
     }
 
     pub(crate) fn emit_jump(&mut self, op: OpCode, range: Range<usize>) -> usize {
-        self.add_operation(op, range);
-        self.operations.len() - 1
+        self.add_instruction(op, range);
+        self.instructions.len() - 1
     }
 
     pub(crate) fn patch_jump(&mut self, index: usize) -> anyhow::Result<()> {
-        let new_offset = self.operations.len() - index;
-        if let JumpIfFalse(ref mut offset) = self.operations[index] {
+        let new_offset = self.instructions.len() - index;
+        if let JumpIfFalse(ref mut offset) = self.instructions[index] {
             *offset = new_offset;
         } else {
             return Err(RuntimeError(format!(
@@ -336,8 +337,8 @@ impl Vm {
     }
 
     pub(crate) fn patch_else_jump(&mut self, index: usize) -> anyhow::Result<()> {
-        let new_offset = self.operations.len() - index - 1;
-        if let Jump(ref mut offset) = self.operations[index] {
+        let new_offset = self.instructions.len() - index - 1;
+        if let Jump(ref mut offset) = self.instructions[index] {
             *offset = new_offset;
         } else {
             return Err(
@@ -348,7 +349,7 @@ impl Vm {
     }
 
     pub(crate) fn emit_loop(&mut self, loop_start: usize, range: Range<usize>) {
-        let offset = self.operations.len() - loop_start;
-        self.add_operation(Loop(offset), range);
+        let offset = self.instructions.len() - loop_start;
+        self.add_instruction(Loop(offset), range);
     }
 }
