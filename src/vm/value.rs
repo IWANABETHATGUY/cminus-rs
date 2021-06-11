@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-#[derive(Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Copy)]
 pub enum Value {
     I32(i32),
     Boolean(bool),

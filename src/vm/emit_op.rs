@@ -46,11 +46,11 @@ impl EmitOperationCode for VarDeclaration {
         if let Some(ref mut init) = self.initializer {
             init.emit(vm)?;
         } else {
-            vm.add_operation(Nil, start..end);
+            vm.add_instruction(Nil, start..end);
         }
         vm.define_variable(name.clone(), start..end)?;
         if vm.scope_depth() == 0 {
-            vm.add_operation(Pop, 10000000..10000000);
+            vm.add_instruction(Pop, 10000000..10000000);
         }
         Ok(())
     }
@@ -82,7 +82,7 @@ impl EmitOperationCode for IterationStatement {
         let loop_start = vm.operations().len();
         self.test.emit(vm)?;
         let exit_jump = vm.emit_jump(JumpIfFalse(0), self.start..self.end);
-        vm.add_operation(Pop, self.test.start()..self.test.end());
+        vm.add_instruction(Pop, self.test.start()..self.test.end());
         self.body.emit(vm)?;
         vm.emit_loop(loop_start, self.body.start()..self.body.end());
         vm.patch_jump(exit_jump)?;
@@ -102,11 +102,11 @@ impl EmitOperationCode for SelectionStatement {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         self.test.emit(vm)?;
         let then_jump = vm.emit_jump(JumpIfFalse(0), self.start..self.end);
-        vm.add_operation(Pop, self.end..self.end);
+        vm.add_instruction(Pop, self.end..self.end);
         self.consequent.emit(vm)?;
         let else_jump = vm.emit_jump(Jump(0), self.start..self.end);
         vm.patch_jump(then_jump)?;
-        vm.add_operation(Pop, self.end..self.end);
+        vm.add_instruction(Pop, self.end..self.end);
         if let Some(ref mut alternative) = self.alternative {
             alternative.emit(vm)?;
         }
@@ -143,7 +143,7 @@ impl EmitOperationCode for Expression {
                 assign.rhs.emit(vm)?;
                 let lhs = &assign.lhs;
                 if let Some(index) = vm.resolve_local(&lhs.id.value) {
-                    vm.add_operation(SetLocal(index), lhs.id.start..lhs.id.end);
+                    vm.add_instruction(SetLocal(index), lhs.id.start..lhs.id.end);
                 } else {
                     unimplemented!() // TODO:
                                      // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
@@ -154,34 +154,34 @@ impl EmitOperationCode for Expression {
                 expr.right.emit(vm)?;
                 match expr.operation {
                     Operation::GT(s, e) => {
-                        vm.add_operation(Greater, s..e);
+                        vm.add_instruction(Greater, s..e);
                     }
                     Operation::LT(s, e) => {
-                        vm.add_operation(Less, s..e);
+                        vm.add_instruction(Less, s..e);
                     }
                     Operation::GE(s, e) => {
-                        vm.add_operation(GreaterEqual, s..e);
+                        vm.add_instruction(GreaterEqual, s..e);
                     }
                     Operation::LE(s, e) => {
-                        vm.add_operation(LessEqual, s..e);
+                        vm.add_instruction(LessEqual, s..e);
                     }
                     Operation::EQ(s, e) => {
-                        vm.add_operation(Equal, s..e);
+                        vm.add_instruction(Equal, s..e);
                     }
                     Operation::NE(s, e) => {
-                        vm.add_operation(NotEqual, s..e);
+                        vm.add_instruction(NotEqual, s..e);
                     }
                     Operation::PLUS(s, e) => {
-                        vm.add_operation(AddI32, s..e);
+                        vm.add_instruction(AddI32, s..e);
                     }
                     Operation::MINUS(s, e) => {
-                        vm.add_operation(SubtractI32, s..e);
+                        vm.add_instruction(SubtractI32, s..e);
                     }
                     Operation::MULTIPLY(s, e) => {
-                        vm.add_operation(MultiplyI32, s..e);
+                        vm.add_instruction(MultiplyI32, s..e);
                     }
                     Operation::DIVIDE(s, e) => {
-                        vm.add_operation(DivideI32, s..e);
+                        vm.add_instruction(DivideI32, s..e);
                     }
                     _ => unreachable!(),
                 }
@@ -191,10 +191,10 @@ impl EmitOperationCode for Expression {
                 expr.right.emit(vm)?;
                 match expr.operation {
                     Operation::AND(s, e) => {
-                        vm.add_operation(And, s..e);
+                        vm.add_instruction(And, s..e);
                     }
                     Operation::OR(s, e) => {
-                        vm.add_operation(Or, s..e);
+                        vm.add_instruction(Or, s..e);
                     }
                     _ => {
                         unreachable!();
@@ -205,10 +205,10 @@ impl EmitOperationCode for Expression {
                 expr.expression.emit(vm)?;
                 match expr.operation {
                     Operation::NEG(s, e) => {
-                        vm.add_operation(Neg, s..e);
+                        vm.add_instruction(Neg, s..e);
                     }
                     Operation::POS(s, e) => {
-                        vm.add_operation(Pos, s..e);
+                        vm.add_instruction(Pos, s..e);
                     }
                     _ => {
                         unreachable!();
@@ -221,17 +221,17 @@ impl EmitOperationCode for Expression {
                 }
                 Factor::Var(var) => {
                     if let Some(index) = vm.resolve_local(&var.id.value) {
-                        vm.add_operation(GetLocal(index), var.start..var.end);
+                        vm.add_instruction(GetLocal(index), var.start..var.end);
                     } else {
-                        vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
+                        vm.add_instruction(GetGlobal(var.id.value.clone()), var.start..var.end);
                     }
                 }
                 Factor::CallExpression(_) => todo!(),
                 Factor::NumberLiteral(NumberLiteral { value, start, end }) => {
-                    vm.add_operation(ConstantI32(*value), *start..*end);
+                    vm.add_instruction(ConstantI32(*value), *start..*end);
                 }
                 Factor::BooleanLiteral(BooleanLiteral { value, start, end }) => {
-                    vm.add_operation(ConstantBoolean(*value), *start..*end);
+                    vm.add_instruction(ConstantBoolean(*value), *start..*end);
                 }
             },
         }
