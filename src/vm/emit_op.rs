@@ -1,7 +1,7 @@
 use super::error::Error::*;
 use super::op_code::OpCode::*;
 use super::vm::Vm;
-use crate::parser::ast::*;
+use crate::parser::{Codespan, ast::*};
 pub trait EmitOperationCode {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()>;
 }
