@@ -7,7 +7,7 @@ use std::time::Instant;
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<()> {
-    let path = path::Path::new("tests/fixtures/vm/local.cm");
+    let path = path::Path::new("tests/fixtures/vm/global.cm");
     let content = read_to_string(path)?;
     let mut lex = lex::Lexer::new(&content);
     let source_code = read_to_string(path)?;
@@ -24,8 +24,8 @@ fn main() -> Result<()> {
     };
     let mut vm = Vm::new();
     program.emit(&mut vm)?;
-    // println!("{:?}", vm);
-    vm.exec()?;
+    println!("{:?}", vm);
+    // vm.exec()?;
     // println!("{:?}",vm);
     // let start = Instant::now();
     println!("{:?}", now.elapsed());

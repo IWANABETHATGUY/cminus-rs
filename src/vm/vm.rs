@@ -1,7 +1,7 @@
 use std::ops::Range;
-use std::rc::Rc;
 
 use super::error::Error::{self, *};
+use super::function::{CallFrame, Function};
 use super::op_code::disassemble_instruction;
 use super::{
     op_code::OpCode::{self, *},
@@ -13,9 +13,9 @@ use crate::util::variant_eq;
 use fxhash::FxHashMap;
 use smol_str::SmolStr;
 #[derive(Debug)]
-struct Compiler {
+pub(crate) struct Compiler {
     locals: Vec<Local>,
-    scope_depth: i32,
+    pub (crate)scope_depth: i32,
     
 }
 
@@ -47,12 +47,14 @@ struct Local {
 }
 #[derive(Debug)]
 pub struct Vm {
-    instructions: Vec<OpCode>,
+    pub(crate) instructions: Vec<OpCode>,
     line_number: Vec<Range<usize>>,
     stack: Vec<Value>,
     globals: FxHashMap<SmolStr, Value>,
-    compiler: Compiler,
-    ip: usize,
+    pub(crate)compiler: Compiler,
+    // ip: usize,
+    frames: Vec<CallFrame>,
+    pub (crate)functions: FxHashMap<SmolStr, Function>
 }
 
 impl Vm {
@@ -63,7 +65,8 @@ impl Vm {
             stack: Vec::with_capacity(256),
             globals: FxHashMap::default(),
             compiler: Compiler::new(),
-            ip: 0,
+            frames: vec![],
+            functions: FxHashMap::default()
         }
     }
     pub fn operations(&self) -> &Vec<OpCode> {
@@ -71,8 +74,10 @@ impl Vm {
     }
 
     pub fn exec(&mut self) -> anyhow::Result<()> {
-        while self.ip < self.instructions.len() {
-            let op = &self.instructions[self.ip];
+        let frame = self.frames.last_mut().unwrap();
+        let function = &frame.function;
+        while frame.ip < function.instructions.len() {
+            let op = &function.instructions[frame.ip];
             match op {
                 ConstantI32(i) => {
                     self.stack.push(Value::I32(*i));
@@ -155,7 +160,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected boolean value",
-                            self.line_number[self.ip]
+                            self.line_number[frame.ip]
                         ))
                         .into());
                     }
@@ -168,7 +173,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected boolean value",
-                            self.line_number[self.ip]
+                            self.line_number[frame.ip]
                         ))
                         .into());
                     }
@@ -180,7 +185,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected integer value, operation negative",
-                            self.line_number[self.ip]
+                            self.line_number[frame.ip]
                         ))
                         .into());
                     }
@@ -192,7 +197,7 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, expected integer value, operation positive",
-                            self.line_number[self.ip]
+                            self.line_number[frame.ip]
                         ))
                         .into());
                     }
@@ -211,45 +216,45 @@ impl Vm {
                     } else {
                         return Err(RuntimeError(format!(
                             "error at range: {:?}, variable {} not defined",
-                            self.line_number[self.ip], name
+                            self.line_number[frame.ip], name
                         ))
                         .into());
                     }
                 }
                 GetLocal(index) => {
-                    self.stack.push(self.stack[*index].clone());
+                    self.stack.push(self.stack[*index + frame.slots].clone());
                 }
                 SetLocal(index) => {
-                    self.stack[*index] = self.stack.last().unwrap().clone();
+                    self.stack[*index + frame.slots] = self.stack.last().unwrap().clone();
                 }
                 JumpIfFalse(offset) => {
                     if let Some(Value::Boolean(v)) = self.stack.last() {
                         if !*v {
-                            trace!(self, op);
-                            println!("ip: {}, offset: {}", self.ip, offset);
-                            self.ip += offset;
+                            // trace!(self, op);
+                            // println!("ip: {}, offset: {}", frame.ip, offset);
+                            frame.ip += offset;
                             continue;
                         }
                     } else {
                         return Err(RuntimeError(format!(
                             "error at {:?}, peek of stack should be a boolean",
-                            self.line_number[self.ip]
+                            self.line_number[frame.ip]
                         ))
                         .into());
                     }
                 }
                 Jump(offset) => {
-                    trace!(self, op);
-                    println!("ip: {}, offset: {}", self.ip, offset);
-                    self.ip += offset;
+                    // trace!(self, op);
+                    // println!("ip: {}, offset: {}", frame.ip, offset);
+                    frame.ip += offset;
                     continue;
                 }
                 Loop(offset) => {
-                    self.ip -= offset;
+                    frame.ip -= offset;
                 },
             }
-            trace!(self, op);
-            self.ip += 1;
+            trace!(self, op, frame);
+            frame.ip += 1;
         }
         Ok(())
     }
@@ -271,6 +276,7 @@ impl Vm {
             self.compiler.locals.push(local);
             // println!("local: {:?}", self.compiler.locals);
         } else {
+            println!("{}", name);
             self.add_instruction(DefineGlobal(name), range);
         }
         Ok(())

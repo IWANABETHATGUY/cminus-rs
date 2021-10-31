@@ -1,7 +1,9 @@
 use super::error::Error::*;
+use super::function::Function;
 use super::op_code::OpCode::*;
 use super::vm::Vm;
 use crate::parser::{Codespan, ast::*};
+use crate::trace;
 pub trait EmitOperationCode {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()>;
 }
@@ -30,6 +32,13 @@ impl EmitOperationCode for Declaration {
         match self {
             Declaration::FunctionDeclaration(decl) => {
                 // TODO: params
+                let params_length = match decl.params {
+                    Params::Void => 0,
+                    Params::ParamsList { params } => params.len(),
+                };
+                let function = Function::new(params_length, decl.id.value, vm.instructions.len());
+                vm.functions.insert(decl.id.value, function);
+                decl.params.emit(vm)?;
                 decl.body.emit(vm)?;
             }
             Declaration::VarDeclaration(var_decl) => {
@@ -39,6 +48,30 @@ impl EmitOperationCode for Declaration {
         Ok(())
     }
 }
+impl EmitOperationCode for Params {
+    fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
+        match self {
+            Params::Void => {
+                Ok(())
+            },
+            Params::ParamsList { params } => {
+                for p in params {
+                    // vm.add_instruction(, p.start..p.end);
+                    let name = p.id.value;
+                    match p.type_specifier.kind {
+                        TypeSpecifierKind::Int => {
+                            
+                        },
+                        TypeSpecifierKind::Void => todo!(),
+                        TypeSpecifierKind::Boolean => todo!(),
+                    }
+                }
+                Ok(())
+            },
+        }
+    }
+}
+
 impl EmitOperationCode for VarDeclaration {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()> {
         let name = &self.id.value;
@@ -124,6 +157,7 @@ impl EmitOperationCode for CompoundStatement {
         for stmt in self.statement_list.iter_mut() {
             stmt.emit(vm)?;
         }
+        println!("{:?}", vm);
         vm.end_scope();
         Ok(())
     }

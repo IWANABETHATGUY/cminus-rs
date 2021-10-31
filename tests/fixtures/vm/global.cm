@@ -1,3 +1,7 @@
-int a = 3 + 2 + 4;
+int a = (3 + 2) * +4;
 void main() {
+  int a = 3333;
+  {
+    int a = 3;
+  }
 }

@@ -1,9 +1,6 @@
 void main() {
     int a = 3;
-    while (a < 1000000) {
+    while (a < 10) {
         a = a + 1;
     } 
-    {
-        int a = a;
-    }
 }

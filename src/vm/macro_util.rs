@@ -9,11 +9,12 @@ macro_rules! expect_value {
 
 #[macro_export]
 macro_rules! trace {
-    ($type:ident, $op:ident) => {{
+    ($type:ident, $op:ident, $frame:ident) => {{
         // DEBUG: start
         if cfg!(debug_assertions) {
             println!("-------start--------");
-            disassemble_instruction($op, $type.line_number[$type.ip].clone());
+            println!("func: {}, ip: {}", $frame.function.name, $frame.ip);
+            // disassemble_instruction($op);
             println!("stack: {:?}", $type.stack);
             println!("locals: {:?}", $type.compiler.locals);
         }

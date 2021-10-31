@@ -39,6 +39,6 @@ pub enum OpCode {
     Loop(usize),
 }
 
-pub fn disassemble_instruction(op: &OpCode, line_number: Range<usize>) {
-    println!("op: {:?}, line: {:?}", op, line_number);
+pub fn disassemble_instruction(op: &OpCode) {
+    println!("op: {:?}, ", op,);
 }
