@@ -5,15 +5,15 @@ mod lexer;
 mod parser;
 use lexer::lex::Lexer;
 mod util;
-use parser::{parse::Parser, Walk};
+use parser::{parse::Parser, visitor::AstPrinter};
+use std::fs::read_to_string;
 use std::path;
 use std::time::Instant;
-use std::{fs::read_to_string};
 #[cfg(target_arch = "x86_64")]
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/vm/local.cm");
+    let path = path::Path::new("tests/fixtures/vm/global.cm");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
@@ -36,6 +36,7 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     println!("total: {:?}", start.elapsed());
-    // println!("{}", res.walk(0));
+    let mut walker = AstPrinter::default();
+    println!("{}", walker.print_ast(&res));
     Ok(())
 }
