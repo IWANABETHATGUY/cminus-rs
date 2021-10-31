@@ -8,3 +8,5 @@ pub mod parser;
 pub mod vm;
 pub use macros::*;
 pub mod util;
+pub(crate) mod tac;
+pub use parser::visitor;
