@@ -1,6 +1,8 @@
-pub mod parse;
-pub mod error;
 pub(crate) mod ast;
+pub mod error;
+pub mod parse;
+pub(crate) mod span;
+pub mod visitor;
+pub(crate) mod walk;
 
-pub use ast::Walk;
-pub use ast::Codespan;
+pub use span::Codespan;

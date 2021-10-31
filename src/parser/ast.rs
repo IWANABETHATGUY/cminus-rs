@@ -2,35 +2,13 @@ use std::fmt::Display;
 
 use codespan_drive::CodeSpan;
 use smol_str::SmolStr;
-pub trait Walk {
-    fn walk(&self, level: usize) -> String;
-}
+use super::span::Codespan;
 
-pub trait Codespan {
-    fn start(&self) -> usize;
-    fn end(&self) -> usize;
-    fn set_start(&mut self, start: usize);
-    fn set_end(&mut self, end: usize);
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct Program {
     pub(crate) declarations: Vec<Declaration>,
     pub start: usize,
     pub end: usize,
-}
-impl Walk for Program {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!(
-            "{}Program {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        let mut children = vec![];
-        for decl in self.declarations.iter() {
-            children.push(decl.walk(level + 1))
-        }
-        ast + &children.join("\n")
-    }
 }
 
 #[derive(Debug, Clone, CodeSpan)]
@@ -42,23 +20,6 @@ pub struct FunctionDeclaration {
     pub start: usize,
     pub end: usize,
 }
-impl Walk for FunctionDeclaration {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!(
-            "{}FunctionDeclaration {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        ast += &vec![
-            self.type_specifier.walk(level + 1),
-            self.id.walk(level + 1),
-            self.params.walk(level + 1),
-            self.body.walk(level + 1),
-        ]
-        .join("\n");
-        ast
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct VarDeclaration {
     pub(crate) type_specifier: TypeSpecifier,
@@ -69,46 +30,13 @@ pub struct VarDeclaration {
     pub start: usize,
     pub end: usize,
 }
-impl Walk for VarDeclaration {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!(
-            "{}VarDeclaration {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        let mut children = vec![self.type_specifier.walk(level + 1), self.id.walk(level + 1)];
-        if let Some(ref num) = self.num {
-            children.push(num.walk(level + 1));
-        }
-        if let Some(ref initializer) = self.initializer {
-            children.push(
-                format!("{}<Initializer>", " ".repeat(2 * (level + 1)),)
-                    + &initializer.walk(level + 1).trim_start(),
-            );
-        }
-        if let Some(ref initializer) = self.array_initializer {
-            children.push(format!("{}<Initializer>", " ".repeat(2 * (level + 1)),));
-            for init in initializer {
-                children.push(init.walk(level + 2));
-            }
-        }
-        ast + &children.join("\n")
-    }
-}
+
 #[derive(Debug, Clone)]
 pub enum Declaration {
     FunctionDeclaration(FunctionDeclaration),
     VarDeclaration(VarDeclaration),
 }
 
-impl Walk for Declaration {
-    fn walk(&self, level: usize) -> String {
-        match &self {
-            Declaration::VarDeclaration(var_decl) => var_decl.walk(level),
-            Declaration::FunctionDeclaration(func_decl) => func_decl.walk(level),
-        }
-    }
-}
 impl Codespan for Declaration {
     fn start(&self) -> usize {
         match self {
@@ -144,47 +72,17 @@ pub struct Identifier {
     pub start: usize,
     pub end: usize,
 }
-impl Walk for Identifier {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}Identifier({}) {}",
-            " ".repeat(2 * level),
-            self.value,
-            generate_codespan_postfix(self)
-        )
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct NumberLiteral {
     pub(crate) value: i32,
     pub start: usize,
     pub end: usize,
 }
-impl Walk for NumberLiteral {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}NumberLiteral({}) {}",
-            " ".repeat(2 * level),
-            self.value,
-            generate_codespan_postfix(self)
-        )
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct BooleanLiteral {
     pub(crate) value: bool,
     pub start: usize,
     pub end: usize,
-}
-impl Walk for BooleanLiteral {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}BooleanLiteral({}) {}",
-            " ".repeat(2 * level),
-            self.value,
-            generate_codespan_postfix(self)
-        )
-    }
 }
 #[derive(Debug, Clone, CodeSpan)]
 pub struct TypeSpecifier {
@@ -193,16 +91,6 @@ pub struct TypeSpecifier {
     pub end: usize,
 }
 
-impl Walk for TypeSpecifier {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}TypeSpecifier({:?}) {}",
-            " ".repeat(2 * level),
-            self.kind,
-            generate_codespan_postfix(self)
-        )
-    }
-}
 #[derive(Debug, Clone)]
 pub(crate) enum TypeSpecifierKind {
     Int,
@@ -243,38 +131,6 @@ impl Codespan for Params {
         unimplemented!() // TODO
     }
 }
-impl Walk for Params {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Params::Void => format!(
-                "{}Void {}",
-                " ".repeat(2 * level),
-                generate_codespan_postfix(self)
-            ),
-            Params::ParamsList { params } => {
-                let params_codespan = if params.len() > 0 {
-                    let start = params[0].start;
-                    let end = params[params.len() - 1].end;
-                    format!("@{}..{}", start, end)
-                } else {
-                    "".to_string()
-                };
-                let ast = format!("{}ParameterList {}", " ".repeat(2 * level), params_codespan);
-                if !params.is_empty() {
-                    ast + "\n"
-                        + &params
-                            .iter()
-                            .map(|param| param.walk(level + 1))
-                            .filter(|param| !param.is_empty())
-                            .collect::<Vec<String>>()
-                            .join("\n")
-                } else {
-                    ast
-                }
-            }
-        }
-    }
-}
 
 #[derive(Debug, Clone, CodeSpan)]
 pub struct Parameter {
@@ -285,18 +141,6 @@ pub struct Parameter {
     pub end: usize,
 }
 
-impl Walk for Parameter {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}Parameter({:?} {}{}) {}",
-            " ".repeat(2 * level),
-            self.type_specifier.kind,
-            self.id.value,
-            if self.is_array { "[]" } else { "" },
-            generate_codespan_postfix(self)
-        )
-    }
-}
 
 #[derive(Debug, Clone, CodeSpan)]
 pub struct CompoundStatement {
@@ -306,38 +150,6 @@ pub struct CompoundStatement {
     pub end: usize,
 }
 
-impl Walk for CompoundStatement {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!(
-            "{}CompoundStatement {}",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        if !self.local_declaration.is_empty() {
-            ast = ast
-                + "\n"
-                + &self
-                    .local_declaration
-                    .iter()
-                    .map(|decl| decl.walk(level + 1))
-                    .filter(|item| !item.is_empty())
-                    .collect::<Vec<String>>()
-                    .join("\n");
-        }
-        if !self.statement_list.is_empty() {
-            ast = ast
-                + "\n"
-                + &self
-                    .statement_list
-                    .iter()
-                    .map(|stmt| stmt.walk(level + 1))
-                    .filter(|item| !item.is_empty())
-                    .collect::<Vec<String>>()
-                    .join("\n");
-        }
-        ast
-    }
-}
 #[derive(Debug, Clone)]
 pub enum Statement {
     CompoundStatement(CompoundStatement),
@@ -347,17 +159,6 @@ pub enum Statement {
     ReturnStatement(ReturnStatement),
 }
 
-impl Walk for Statement {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Statement::CompoundStatement(stmt) => stmt.walk(level),
-            Statement::ExpressionStatement(stmt) => stmt.walk(level),
-            Statement::SelectionStatement(stmt) => stmt.walk(level),
-            Statement::IterationStatement(stmt) => stmt.walk(level),
-            Statement::ReturnStatement(stmt) => stmt.walk(level),
-        }
-    }
-}
 impl Codespan for Statement {
     fn start(&self) -> usize {
         match self {
@@ -392,24 +193,6 @@ pub struct SelectionStatement {
     pub end: usize,
 }
 
-impl Walk for SelectionStatement {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!(
-            "{}SelectionStatement {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        let mut children = vec![self.test.walk(level + 1), self.consequent.walk(level + 1)];
-        if let Some(ref consequent) = self.alternative {
-            children.push(consequent.walk(level + 1));
-        }
-        ast + &children
-            .into_iter()
-            .filter(|child| !child.is_empty())
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct IterationStatement {
     pub(crate) test: Expression,
@@ -418,21 +201,6 @@ pub struct IterationStatement {
     pub end: usize,
 }
 
-impl Walk for IterationStatement {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!(
-            "{}IterationStatement {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        let mut children = vec![self.test.walk(level + 1)];
-        let body_ast_string = self.body.walk(level + 1);
-        if !body_ast_string.is_empty() {
-            children.push(body_ast_string);
-        }
-        ast + &children.join("\n")
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct ReturnStatement {
     pub(crate) expression: Option<Expression>,
@@ -440,19 +208,6 @@ pub struct ReturnStatement {
     pub end: usize,
 }
 
-impl Walk for ReturnStatement {
-    fn walk(&self, level: usize) -> String {
-        let mut ast = format!(
-            "{}ReturnStatement {}\n",
-            " ".repeat(2 * level),
-            generate_codespan_postfix(self)
-        );
-        if let Some(ref expr) = self.expression {
-            ast += &expr.walk(level + 1);
-        }
-        ast
-    }
-}
 #[derive(Debug, Clone, CodeSpan)]
 pub struct ExpressionStatement {
     pub(crate) expression: Option<Expression>,
@@ -460,15 +215,6 @@ pub struct ExpressionStatement {
     pub end: usize,
 }
 
-impl Walk for ExpressionStatement {
-    fn walk(&self, level: usize) -> String {
-        if let Some(ref expr) = self.expression {
-            expr.walk(level)
-        } else {
-            "".to_string()
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -479,59 +225,6 @@ pub enum Expression {
     Factor(Factor),
 }
 
-impl Walk for Expression {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Expression::Assignment(assignment) => {
-                let ast = format!(
-                    "{}Assignment {}\n",
-                    " ".repeat(2 * level),
-                    generate_codespan_postfix(self)
-                );
-                ast + &assignment.walk(level)
-            }
-            Expression::BinaryExpression(binary_expr) => {
-                let ast = format!(
-                    "{}BinaryExpression {}\n",
-                    " ".repeat(2 * level),
-                    generate_codespan_postfix(self)
-                );
-                let children = vec![
-                    binary_expr.left.walk(level + 1),
-                    binary_expr.operation.walk(level + 1),
-                    binary_expr.right.walk(level + 1),
-                ];
-                ast + &children.join("\n")
-            }
-            Expression::Factor(factor) => factor.walk(level),
-            Expression::LogicExpression(logic_expr) => {
-                let ast = format!(
-                    "{}LogicExpression {}\n",
-                    " ".repeat(2 * level),
-                    generate_codespan_postfix(self)
-                );
-                let children = vec![
-                    logic_expr.left.walk(level + 1),
-                    logic_expr.operation.walk(level + 1),
-                    logic_expr.right.walk(level + 1),
-                ];
-                ast + &children.join("\n")
-            }
-            Expression::UnaryExpression(expr) => {
-                let ast = format!(
-                    "{}UnaryExpression {}\n",
-                    " ".repeat(2 * level),
-                    generate_codespan_postfix(self)
-                );
-                let children = vec![
-                    expr.operation.walk(level + 1),
-                    expr.expression.walk(level + 1),
-                ];
-                ast + &children.join("\n")
-            }
-        }
-    }
-}
 
 impl Codespan for Expression {
     fn start(&self) -> usize {
@@ -582,11 +275,6 @@ pub struct AssignmentExpression {
     pub end: usize,
 }
 
-impl Walk for AssignmentExpression {
-    fn walk(&self, level: usize) -> String {
-        format!("{}\n{}", self.lhs.walk(level + 1), self.rhs.walk(level + 1))
-    }
-}
 
 #[derive(Debug, Clone, CodeSpan)]
 pub struct Var {
@@ -596,23 +284,6 @@ pub struct Var {
     pub end: usize,
 }
 
-impl Walk for Var {
-    fn walk(&self, level: usize) -> String {
-        let id = self.id.walk(level + 1);
-        let mut result = vec![
-            format!(
-                "{}Var {}",
-                " ".repeat(2 * level),
-                generate_codespan_postfix(self)
-            ),
-            id,
-        ];
-        if let Some(ref expr) = self.expression {
-            result.push(expr.walk(level + 1));
-        }
-        result.join("\n")
-    }
-}
 
 #[derive(Debug, Clone, CodeSpan)]
 pub struct LogicExpression {
@@ -748,16 +419,6 @@ impl Codespan for Operation {
         unimplemented!() // TODO
     }
 }
-impl Walk for Operation {
-    fn walk(&self, level: usize) -> String {
-        format!(
-            "{}{} {}",
-            " ".repeat(2 * level),
-            self,
-            generate_codespan_postfix(self)
-        )
-    }
-}
 #[derive(Debug, Clone)]
 pub enum Factor {
     Expression(Box<Expression>),
@@ -767,17 +428,6 @@ pub enum Factor {
     BooleanLiteral(BooleanLiteral),
 }
 
-impl Walk for Factor {
-    fn walk(&self, level: usize) -> String {
-        match self {
-            Factor::Expression(expr) => expr.walk(level),
-            Factor::Var(var) => var.walk(level),
-            Factor::CallExpression(call) => call.walk(level),
-            Factor::NumberLiteral(num) => num.walk(level),
-            Factor::BooleanLiteral(boolean) => boolean.walk(level),
-        }
-    }
-}
 
 impl Codespan for Factor {
     fn start(&self) -> usize {
@@ -826,47 +476,4 @@ pub struct CallExpression {
     pub(crate) arguments: Vec<Expression>,
     pub start: usize,
     pub end: usize,
-}
-
-impl Walk for CallExpression {
-    fn walk(&self, level: usize) -> String {
-        let ast = format!(
-            "{}CallExpression {}\n",
-            " ".repeat(level * 2),
-            generate_codespan_postfix(self)
-        );
-        let arguments_codespan = if self.arguments.len() > 0 {
-            let start = self.arguments[0].start();
-            let end = self.arguments[self.arguments.len() - 1].end();
-            format!("@{}..{}", start, end)
-        } else {
-            "".to_string()
-        };
-        let children = vec![
-            self.id.walk(level + 1),
-            format!(
-                "{}Arguments {}",
-                " ".repeat((level + 1) * 2),
-                arguments_codespan
-            ),
-            self.arguments
-                .iter()
-                .map(|arg| arg.walk(level + 2))
-                .filter(|arg| !arg.is_empty())
-                .collect::<Vec<String>>()
-                .join("\n"),
-        ];
-        ast + &children
-            .into_iter()
-            .filter(|item| !item.is_empty())
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
-}
-
-fn generate_codespan_postfix<T>(node: &T) -> String
-where
-    T: Codespan,
-{
-    format!("@{}..{}", node.start(), node.end())
 }

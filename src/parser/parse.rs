@@ -1,7 +1,7 @@
 use crate::{
     error_emit::ErrorReporter,
     lexer::token::{KeywordType, Token, TokenType},
-    parser::ast::*,
+    parser::{ast::*, Codespan},
 };
 
 pub struct Parser<'a> {
