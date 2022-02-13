@@ -1,4 +1,4 @@
-import { parse, tokenize, interpret } from 'wasm';
+import { interpret, parse, tokenize } from 'wasm';
 import { EditorState } from '@codemirror/next/state';
 import { cpp } from '@codemirror/next/lang-cpp';
 import { EditorView, basicSetup } from '@codemirror/next/basic-setup';
