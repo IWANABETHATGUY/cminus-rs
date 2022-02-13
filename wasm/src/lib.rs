@@ -3,7 +3,7 @@ mod utils;
 use tinylang_rs::{
     interpreter,
     lexer::lex::Lexer,
-    parser::{parse::Parser, Walk},
+    parser::{parse::Parser, visitor::AstPrinter},
 };
 use wasm_bindgen::prelude::*;
 
@@ -20,7 +20,10 @@ pub fn parse(source_code: String) -> String {
     let mut parser = Parser::new(list, &source_code);
     let res = parser.parse_program();
     match res {
-        Ok(program) => program.walk(0),
+        Ok(program) => {
+            let mut walker = AstPrinter::default();
+            walker.print_ast(&program)
+        }
         Err(_) => parser.error_reporter.emit_string(),
     }
 }
@@ -43,9 +46,7 @@ pub fn interpret(source_code: String) -> String {
     let res = parser.parse_program();
     match res {
         Ok(mut program) => match interpreter::interpret(&mut program, false) {
-            Ok(env) => {
-                env.get_std_simulator_string()
-            }
+            Ok(env) => env.get_std_simulator_string(),
             Err(_) => {
                 format!("interpreter error",)
             }
