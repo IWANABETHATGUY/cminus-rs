@@ -252,7 +252,7 @@ impl Codespan for Expression {
             Expression::Assignment(expr) => expr.start = start,
             Expression::BinaryExpression(expr) => expr.start = start,
             Expression::Factor(_) => unimplemented!(),
-            Expression::LogicExpression(_) => unimplemented!(),
+            Expression::LogicExpression(expr) => expr.start = start,
             Expression::UnaryExpression(_) => unimplemented!(),
         };
     }
@@ -262,7 +262,7 @@ impl Codespan for Expression {
             Expression::Assignment(expr) => expr.end = end,
             Expression::BinaryExpression(expr) => expr.end = end,
             Expression::Factor(_) => unimplemented!(),
-            Expression::LogicExpression(_) => unimplemented!(),
+            Expression::LogicExpression(expr) => expr.end = end,
             Expression::UnaryExpression(_) => unimplemented!(),
         };
     }

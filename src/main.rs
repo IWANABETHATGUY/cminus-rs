@@ -13,7 +13,7 @@ use std::time::Instant;
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/vm/global.cm");
+    let path = path::Path::new("tests/fixtures/interpreter/insert_sort.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
@@ -36,7 +36,7 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     println!("total: {:?}", start.elapsed());
-    let mut walker = AstPrinter::default();
-    println!("{}", walker.print_ast(&res));
+    // let mut walker = AstPrinter::default();
+    // println!("{}", walker.print_ast(&res));
     Ok(())
 }
