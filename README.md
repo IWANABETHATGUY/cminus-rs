@@ -31,9 +31,9 @@ ReturnStatement = 'return' [ Expression ] ';';
 Expression = Var '=' Expression
            | OrExpression;
 Var = Identifier | Identifier '[' Expression ']';
-SimpleExpression = AdditiveExpression RelOp AdditiveExpression | AdditiveExpression;
 OrExpression = AndExpression | OrExpression '||' AndExpression;
 AndExpression = SimpleExpression | AndExpression  '&&' SimpleExpression;
+SimpleExpression = AdditiveExpression RelOp AdditiveExpression | AdditiveExpression;
 RelOp = '<=' | '<' | '>=' | '>' '==' | '!=';
 AdditiveExpression = AdditiveExpression AddOp Term | [UnaryOp] Term;
 AddOp = '+' | '-';
