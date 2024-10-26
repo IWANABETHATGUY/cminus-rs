@@ -1,0 +1,18 @@
+int fib(int n) {
+  int a = 0;
+  int b = 1;
+  int tmp;
+  while (n > 0) {
+    tmp = b;
+    b = a + b;
+    a = tmp;
+    n = n - 1;
+  }
+  return a;
+}
+
+void main() {
+  int res = fib(100000);
+  print(res);
+}
+

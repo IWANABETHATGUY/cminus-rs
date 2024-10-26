@@ -1,4 +1,3 @@
-#![feature(box_patterns)]
 pub mod error_emit;
 pub mod interpreter;
 pub mod lexer;

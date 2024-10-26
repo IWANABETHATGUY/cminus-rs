@@ -1,7 +1,7 @@
 use super::error::Error::*;
 use super::op_code::OpCode::*;
 use super::vm::Vm;
-use crate::parser::{Codespan, ast::*};
+use crate::parser::{ast::*, Codespan};
 pub trait EmitOperationCode {
     fn emit(&mut self, vm: &mut Vm) -> anyhow::Result<()>;
 }
@@ -145,8 +145,8 @@ impl EmitOperationCode for Expression {
                 if let Some(index) = vm.resolve_local(&lhs.id.value) {
                     vm.add_instruction(SetLocal(index), lhs.id.start..lhs.id.end);
                 } else {
-                    unimplemented!() // TODO:
-                                     // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
+                    unreachable!();
+                    // vm.add_operation(GetGlobal(var.id.value.clone()), var.start..var.end);
                 }
             }
             Expression::BinaryExpression(expr) => {

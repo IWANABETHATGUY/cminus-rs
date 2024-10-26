@@ -1,4 +1,3 @@
-#![feature(box_patterns)]
 mod error_emit;
 mod interpreter;
 mod lexer;
@@ -12,8 +11,9 @@ use std::time::Instant;
 #[cfg(target_arch = "x86_64")]
 #[global_allocator]
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
+
 fn main() -> Result<(), std::io::Error> {
-    let path = path::Path::new("tests/fixtures/interpreter/insert_sort.txt");
+    let path = path::Path::new("tests/fixtures/interpreter/test.txt");
     let source_code = read_to_string(path)?;
     let mut lex = Lexer::new(&source_code);
     let list = lex.lex();
